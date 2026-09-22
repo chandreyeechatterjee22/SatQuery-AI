@@ -1,0 +1,35 @@
+{
+  "name": "temp-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-leaflet/core": "^3.0.0",
+    "@types/leaflet": "^1.9.22",
+    "axios": "^1.20.0",
+    "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-icons": "^5.7.0",
+    "react-leaflet": "^5.0.0",
+    "react-leaflet-draw": "^0.21.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.5.5",
+    "oxlint": "^1.79.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
+    "vite": "^4.0.0"
+  }
+}
