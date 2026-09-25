@@ -27,15 +27,21 @@ def preview_bands(bands):
     return [1], "gray"
 
 
-def render_preview(src_path, bands, out_path, max_size=MAX_PREVIEW_SIZE):
+def display_rgb(src_path, bands, max_size=MAX_PREVIEW_SIZE):
+    """Read and stretch a raster for display or model input.
+
+    Returns (rgb uint8 array (3, H, W), valid mask (H, W), rendering, band indexes).
+    """
     indexes, rendering = preview_bands(bands)
-    with rasterio.open(src_path) as src:
-        scale = max(src.width, src.height) / max_size
-        height, width = src.height, src.width
-        if scale > 1:
-            height, width = max(1, round(src.height / scale)), max(1, round(src.width / scale))
-        data = src.read(indexes, out_shape=(len(indexes), height, width), masked=True,
-                        resampling=Resampling.average).astype("float64")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", NotGeoreferencedWarning)
+        with rasterio.open(src_path) as src:
+            scale = max(src.width, src.height) / max_size
+            height, width = src.height, src.width
+            if scale > 1:
+                height, width = max(1, round(src.height / scale)), max(1, round(src.width / scale))
+            data = src.read(indexes, out_shape=(len(indexes), height, width), masked=True,
+                            resampling=Resampling.average).astype("float64")
 
     valid = ~np.ma.getmaskarray(data).any(axis=0) & np.isfinite(data.filled(np.nan)).all(axis=0)
     if rendering == "sar_db":
@@ -43,11 +49,14 @@ def render_preview(src_path, bands, out_path, max_size=MAX_PREVIEW_SIZE):
     channels = [stretch(band, valid) for band in data]
     if len(channels) == 1:
         channels = channels * 3
-    alpha = np.where(valid, 255, 0).astype("uint8")
-    rgba = np.stack(channels + [alpha])
+    return np.stack(channels), valid, rendering, indexes
 
-    write_png(out_path, rgba)
-    return {"width": width, "height": height, "rendering": rendering, "bands": indexes}
+
+def render_preview(src_path, bands, out_path, max_size=MAX_PREVIEW_SIZE):
+    rgb, valid, rendering, indexes = display_rgb(src_path, bands, max_size)
+    alpha = np.where(valid, 255, 0).astype("uint8")
+    write_png(out_path, np.concatenate([rgb, alpha[None]]))
+    return {"width": rgb.shape[2], "height": rgb.shape[1], "rendering": rendering, "bands": indexes}
 
 
 def write_png(out_path, rgba):

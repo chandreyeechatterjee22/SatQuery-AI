@@ -16,6 +16,23 @@ def upload_dir():
     return Path(os.getenv("UPLOAD_DIR") or DEFAULT_UPLOAD_DIR)
 
 
+def model_cache_dir():
+    """Where model weights live (env MODEL_CACHE_DIR, default <repo>/data/models, git-ignored)."""
+    return Path(os.getenv("MODEL_CACHE_DIR") or REPO_ROOT / "data" / "models")
+
+
+def remoteclip_checkpoint():
+    """RemoteCLIP ViT-B/32 weights (env REMOTECLIP_CHECKPOINT)."""
+    return Path(os.getenv("REMOTECLIP_CHECKPOINT")
+                or model_cache_dir() / "remoteclip" / "RemoteCLIP-ViT-B-32.pt")
+
+
+def vqa_head_path():
+    """Trained RSVQA-LR VQA head (env VQA_HEAD_PATH)."""
+    return Path(os.getenv("VQA_HEAD_PATH")
+                or model_cache_dir() / "vqa_head" / "rsvqa_lr_head.pt")
+
+
 def max_upload_bytes():
     """Per-file size limit (env MAX_UPLOAD_MB)."""
     raw = os.getenv("MAX_UPLOAD_MB")
