@@ -42,3 +42,27 @@ Tests (synthetic data, no downloads): `cd ml; ..\.venv\Scripts\python.exe -m pyt
   with published numbers.
 - RSVQA-LR has no "area" questions (those are in RSVQA-HR), so this head has not
   learned to answer them.
+
+## Results (2026-09-26, i3-1115G4 CPU, 2 threads, 7.8 GB RAM)
+
+Head trained with `config.yaml` as committed: vocabulary of 1,263 answers from TRAIN. Early
+stopping picked epoch 19 of 25 (by val accuracy). Training took 13.6 min in total, of which
+about 10 min was the one-off embedding, which is then cached. Val accuracy was 70.58%.
+
+RSVQA-LR **test** (10,004 questions, 100 images), from `eval.py`:
+
+| answerer | comp | count | presence | rural_urban | OA | AA | count (binned) |
+|---|---|---|---|---|---|---|---|
+| trained head | 85.33% | 26.84% | 90.19% | 85.00% | 69.53% | 71.84% | 65.76% |
+| zero-shot RemoteCLIP | 0.00%* | 0.00%* | 55.40% | 67.00% | 17.03% | 30.60% | - |
+| majority baseline | 66.74% | 25.55% | 75.03% | 56.00% | 56.95% | 55.83% | 25.55% |
+
+\* Zero-shot does not answer comparison or count questions, so they count as wrong.
+
+- The head beats the majority baseline on presence, comparison and rural/urban.
+- **Exact-count accuracy (26.8%) is barely above always answering "0" (25.6%).** Exact
+  counting from a single 224-px CLIP embedding is essentially unsolved here. Binned
+  counting (65.8%) is more meaningful.
+- Zero-shot presence (55.4%) is worse than the majority answer, so the trained head
+  should be installed whenever VQA matters.
+- Question-type detection matched the dataset labels on 100% of test questions.
