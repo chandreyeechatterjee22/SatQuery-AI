@@ -24,25 +24,6 @@ def classes_in(question, allowed):
     return found or list(allowed)
 
 
-class VqaPlaceholder(PlaceholderTool):
-    name = "rs_vqa"
-    task = tasks.VQA
-    description = "Answer free-form questions about a single image with a remote-sensing VLM."
-    params = {"question": {"type": "str", "max_length": 500, "required": True}}
-    unavailable_reason = "No visual question-answering model is loaded."
-
-    def extract_params(self, question, ctx):
-        return {"question": question}
-
-
-class CaptionPlaceholder(PlaceholderTool):
-    name = "rs_caption"
-    task = tasks.CAPTION
-    description = "Describe a single image with a remote-sensing captioning model."
-    params = {}
-    unavailable_reason = "No image-captioning model is loaded."
-
-
 class WaterBuiltupPlaceholder(PlaceholderTool):
     name = "optical_sar_mapper"
     task = tasks.WATER_BUILTUP
