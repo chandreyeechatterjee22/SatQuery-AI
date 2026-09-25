@@ -38,3 +38,22 @@ def make_upload(upload_dir, tmp_path):
         return upload_id
 
     return _make
+
+
+@pytest.fixture(autouse=True)
+def no_real_models(tmp_path, monkeypatch):
+    """Default: no weights, so tests never depend on what is installed on this machine.
+
+    Tests that want a (fake or real) model opt in explicitly.
+    """
+    from models import remoteclip, vqa_head
+    from agent.tools import clip_common
+
+    monkeypatch.setenv("REMOTECLIP_CHECKPOINT", str(tmp_path / "missing" / "remoteclip.pt"))
+    monkeypatch.setenv("VQA_HEAD_PATH", str(tmp_path / "missing" / "head.pt"))
+    remoteclip._reset_for_tests()
+    monkeypatch.setattr(vqa_head, "_head", None)
+    monkeypatch.setattr(vqa_head, "_head_key", None)
+    clip_common._zero_shot.clear()
+    yield
+    remoteclip._reset_for_tests()

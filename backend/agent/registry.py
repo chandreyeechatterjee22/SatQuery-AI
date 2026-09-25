@@ -11,6 +11,16 @@ class ToolResult:
     confidence: float
     evidence_images: list = field(default_factory=list)
     data: dict = field(default_factory=dict)
+    trace: dict = field(default_factory=dict)  # structured facts added to the run_tool step
+
+
+class ToolNotAvailable(RuntimeError):
+    """Raised by run() when this particular request cannot be served (e.g. model missing)."""
+
+    def __init__(self, reason, trace=None):
+        super().__init__(reason)
+        self.reason = reason
+        self.trace = trace or {}
 
 
 class Tool:
@@ -74,8 +84,9 @@ class Registry:
 
 
 def default_registry():
+    from agent.tools.caption import CaptionTool
     from agent.tools.metadata import MetadataTool
-    from agent.tools.placeholders import (CaptionPlaceholder, ChangePlaceholder, VqaPlaceholder,
-                                          WaterBuiltupPlaceholder)
-    return Registry([MetadataTool(), CaptionPlaceholder(), VqaPlaceholder(),
+    from agent.tools.placeholders import ChangePlaceholder, WaterBuiltupPlaceholder
+    from agent.tools.vqa import VqaTool
+    return Registry([MetadataTool(), CaptionTool(), VqaTool(),
                      WaterBuiltupPlaceholder(), ChangePlaceholder()])

@@ -10,7 +10,7 @@ import uuid
 from agent import tasks
 from agent.context import UploadContext
 from agent.params import validate_params
-from agent.registry import NOT_AVAILABLE, OK, default_registry
+from agent.registry import NOT_AVAILABLE, OK, ToolNotAvailable, default_registry
 
 REJECTED = "REJECTED"
 ERROR = "ERROR"
@@ -113,13 +113,19 @@ class _Run:
             return self._finish(NOT_AVAILABLE, f"Not available: {reason}")
         try:
             result = self.tool.run(self.ctx, clean, self.query_id)
+        except ToolNotAvailable as exc:
+            self._step("run_tool", "not_available", t, {"reason": exc.reason, **exc.trace})
+            return self._finish(NOT_AVAILABLE, f"Not available: {exc.reason}")
         except Exception as exc:  # report, never crash the request
             self._step("run_tool", "failed", t, {"error": f"{type(exc).__name__}: {exc}"})
             return self._finish(ERROR, f"The {self.tool.name} tool failed: {exc}")
-        self._step("run_tool", "ok", t, {"evidence_images": len(result.evidence_images)})
-        confidence = round(result.confidence * self.task_confidence, 2)
+        self._step("run_tool", "ok", t,
+                   {**result.trace, "evidence_images": len(result.evidence_images)})
+        # The reported confidence is the tool's own (e.g. a softmax probability);
+        # how sure the router was about the task is kept separately in the trace.
+        confidence = round(result.confidence, 4)
         return self._finish(OK, result.answer, confidence, result.evidence_images, result.data,
-                            tool_confidence=result.confidence)
+                            tool_confidence=confidence)
 
     def _step(self, name, status, started, detail):
         self.steps.append({"step": name, "status": status,
@@ -145,8 +151,7 @@ class _Run:
                 "inputs": self.inputs,
                 "duration_ms": _ms(time.perf_counter() - self.started),
                 "status": status,
-                "confidence": {"task": self.task_confidence, "tool": tool_confidence,
-                               "combined": confidence},
+                "confidence": {"task": self.task_confidence, "tool": tool_confidence},
                 "steps": self.steps,
             },
         }

@@ -48,6 +48,9 @@ Copy-Item .env.example .env
 | `GEE_PRIVATE_KEY` | *(empty)* | Path to the service-account JSON key |
 | `UPLOAD_DIR` | `<repo>/data/uploads` | Where accepted uploads are stored |
 | `MAX_UPLOAD_MB` | `500` | Per-file upload size limit |
+| `MODEL_CACHE_DIR` | `<repo>/data/models` | Model weights (git-ignored) |
+| `REMOTECLIP_CHECKPOINT` | `<cache>/remoteclip/RemoteCLIP-ViT-B-32.pt` | RemoteCLIP weights |
+| `VQA_HEAD_PATH` | `<cache>/vqa_head/rsvqa_lr_head.pt` | Trained VQA head |
 
 3. Authenticate with Earth Engine. For local development, run:
 ```powershell
@@ -98,8 +101,8 @@ Pipeline: classify the question (rules, then a typo-tolerant keyword fallback) -
 | Task | Modes | Tool | Status |
 |---|---|---|---|
 | metadata (bands, CRS, resolution, size, extent, dates) | all | `image_metadata` | available |
-| caption | single | `rs_caption` | `NOT_AVAILABLE` (model not added yet) |
-| vqa | single | `rs_vqa` | `NOT_AVAILABLE` (model not added yet) |
+| caption | single | `rs_caption` | RemoteCLIP zero-shot scene labels (needs the ML install) |
+| vqa | single | `rs_vqa` | trained RSVQA-LR head if present, else zero-shot RemoteCLIP (presence, rural/urban) |
 | water / built-up | optical_sar | `optical_sar_mapper` | `NOT_AVAILABLE` (not built yet) |
 | change | bi_temporal | `landcover_change` | `NOT_AVAILABLE` (not built yet) |
 
@@ -109,6 +112,20 @@ The response has `status` (`OK`, `NOT_AVAILABLE`, `REJECTED`, `ERROR`), `answer`
 $body = @{ upload_id = "<id from /api/uploads>"; question = "How many bands does this image have?" } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/query -ContentType "application/json" -Body $body
 ```
+
+## Local models (captioning and VQA)
+
+Optional. Without these steps, captioning and VQA return `NOT_AVAILABLE` and everything else works.
+
+```powershell
+cd backend
+pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements-ml.txt
+python scripts\download_remoteclip.py        # RemoteCLIP ViT-B/32, Apache-2.0, ~605 MB
+python scripts\benchmark_remoteclip.py       # speed and RAM on this machine
+```
+
+To train the RSVQA-LR VQA head, see [ml/vqa_head/README.md](ml/vqa_head/README.md).
 
 ## Frontend Setup
 

@@ -25,7 +25,7 @@ def test_metadata_question_runs_end_to_end(make_upload, upload_dir):
     assert res["status"] == "OK"
     assert res["question"] == "How many bands does this image have?"
     assert "13 band(s)" in res["answer"]
-    assert res["confidence"] == 0.95          # rule confidence 0.95 x tool confidence 1.0
+    assert res["confidence"] == 1.0           # the tool's own confidence
     assert res["evidence_images"][0]["url"] == f"/api/uploads/{uid}/preview/1"
 
     trace = res["trace"]
@@ -34,7 +34,7 @@ def test_metadata_question_runs_end_to_end(make_upload, upload_dir):
     assert trace["tool"] == "image_metadata" and trace["tool_version"] == "1.0.0"
     assert trace["params"] == {"fields": ["bands"]}
     assert trace["inputs"] == [{"slot": 1, "filename": "input_1.tif", "kind": "optical", "date": None}]
-    assert trace["confidence"] == {"task": 0.95, "tool": 1.0, "combined": 0.95}
+    assert trace["confidence"] == {"task": 0.95, "tool": 1.0}
     assert trace["duration_ms"] >= 0
     assert step_names(res) == [("classify_task", "ok"), ("check_mode", "ok"), ("select_tool", "ok"),
                                ("validate_params", "ok"), ("run_tool", "ok")]
@@ -120,10 +120,11 @@ def test_tool_exception_becomes_error_status(make_upload):
     assert res["trace"]["steps"][-1]["detail"]["error"] == "ValueError: disk on fire"
 
 
-def test_combined_confidence_and_details(make_upload):
+def test_confidence_is_the_tools_and_details_pass_through(make_upload):
     uid = make_upload("single", [{}])
     res = run_query(uid, "How many bands?", registry=Registry([_Fixed()]))
-    assert res["confidence"] == round(0.5 * 0.95, 2)
+    assert res["confidence"] == 0.5
+    assert res["trace"]["confidence"] == {"task": 0.95, "tool": 0.5}
     assert res["details"] == {"x": 1}
     assert res["trace"]["tool_version"] == "1.2.3"
 
