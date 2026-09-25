@@ -1,0 +1,56 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*service-account*.json
+
+# --- Node ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+
+# --- Data, uploads, outputs ---
+data/
+uploads/
+outputs/
+reports/
+ml/runs/
+ml/checkpoints/
+
+# --- Model weights ---
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.bin
+*.h5
+
+# --- Raster files (tests generate their own in tmp dirs) ---
+*.tif
+*.tiff
+
+# --- IDE / OS ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
