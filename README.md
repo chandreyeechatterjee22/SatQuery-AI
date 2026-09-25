@@ -89,6 +89,27 @@ Returns `201` with the upload id, per-file metadata (bands, dtype, CRS, bounds, 
 curl.exe -X POST http://localhost:8000/api/uploads -F mode=optical_sar -F file_1=@optical.tif -F file_2=@sar.tif
 ```
 
+## Query API (agent controller)
+
+`POST /api/query` with JSON `{"upload_id": "...", "question": "...", "params": {...}}` (`params` optional, validated against the tool's allow-list).
+
+Pipeline: classify the question (rules, then a typo-tolerant keyword fallback) -> check the task fits the upload mode -> pick the tool from the registry -> validate params -> run.
+
+| Task | Modes | Tool | Status |
+|---|---|---|---|
+| metadata (bands, CRS, resolution, size, extent, dates) | all | `image_metadata` | available |
+| caption | single | `rs_caption` | `NOT_AVAILABLE` (model not added yet) |
+| vqa | single | `rs_vqa` | `NOT_AVAILABLE` (model not added yet) |
+| water / built-up | optical_sar | `optical_sar_mapper` | `NOT_AVAILABLE` (not built yet) |
+| change | bi_temporal | `landcover_change` | `NOT_AVAILABLE` (not built yet) |
+
+The response has `status` (`OK`, `NOT_AVAILABLE`, `REJECTED`, `ERROR`), `answer`, `confidence` (task-classification confidence x tool confidence), `evidence_images` (URLs relative to the API host) and `trace` (task, tool + version, params, inputs, duration, status and per-step timings). `GET /api/tools` lists the registered tools.
+
+```powershell
+$body = @{ upload_id = "<id from /api/uploads>"; question = "How many bands does this image have?" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/query -ContentType "application/json" -Body $body
+```
+
 ## Frontend Setup
 
 1. Install dependencies and configure the API URL:
