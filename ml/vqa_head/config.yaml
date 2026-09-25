@@ -1,0 +1,22 @@
+# VQA head on frozen RemoteCLIP ViT-B/32 embeddings, trained on RSVQA-LR.
+# Relative paths are resolved from the repo root. Everything under data/ is git-ignored.
+
+data_dir: data/rsvqa_lr                       # from download_rsvqa_lr.py
+cache_dir: data/rsvqa_lr/embeddings           # cached CLIP embeddings per split
+output: data/models/vqa_head/rsvqa_lr_head.pt # default VQA_HEAD_PATH used by the backend
+
+seed: 0
+
+answers:
+  min_count: 1          # keep TRAIN answers seen at least this many times
+
+network:
+  hidden: 512
+  dropout: 0.2
+
+train:
+  epochs: 40
+  batch_size: 256
+  lr: 0.001
+  weight_decay: 0.0001
+  patience: 6           # early stopping on VAL accuracy; TEST is never used in training
