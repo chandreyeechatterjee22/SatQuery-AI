@@ -1,8 +1,12 @@
 import numpy as np
+import pytest
 import rasterio
 
 from raster.preview import preview_bands, render_preview
 from tests.synthetic import make_geotiff
+
+# Reading the PNGs back has no georeferencing by design.
+pytestmark = pytest.mark.filterwarnings("ignore::rasterio.errors.NotGeoreferencedWarning")
 
 
 def read_png(path):
