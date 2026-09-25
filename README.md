@@ -46,6 +46,8 @@ Copy-Item .env.example .env
 | `GEE_PROJECT_ID` | `satquery-ai-508105` | Earth Engine cloud project |
 | `GEE_SERVICE_ACCOUNT` | *(empty)* | Optional service-account email |
 | `GEE_PRIVATE_KEY` | *(empty)* | Path to the service-account JSON key |
+| `UPLOAD_DIR` | `<repo>/data/uploads` | Where accepted uploads are stored |
+| `MAX_UPLOAD_MB` | `500` | Per-file upload size limit |
 
 3. Authenticate with Earth Engine. For local development, run:
 ```powershell
@@ -68,6 +70,24 @@ pytest
 The pytest suite needs no network or Earth Engine credentials.
 
 `backend/test_backend.py` is a manual smoke script, not part of pytest: it needs a running server on port 8000 plus valid GEE credentials (`python test_backend.py`).
+
+## Upload API (upload-based flow)
+
+`POST /api/uploads` (multipart form):
+
+| Field | Notes |
+|---|---|
+| `mode` | `single` (1 file), `optical_sar` (file_1 optical, file_2 SAR), `bi_temporal` (2 files) |
+| `file_1`, `file_2` | GeoTIFF (`.tif`/`.tiff`); PNG/JPEG only with `benchmark_mode=true` |
+| `date_1`, `date_2` | `YYYY-MM-DD`; required and different for `bi_temporal` |
+| `sensor_1`, `sensor_2` | Optional: `auto` (default), `sentinel2`, `cartosat2s`, `bgrn`, `rgb`, `sar` |
+| `benchmark_mode` | `true` to allow PNG/JPEG |
+
+Returns `201` with the upload id, per-file metadata (bands, dtype, CRS, bounds, resolution), band roles, pair checks and warnings; `422` with every rejection reason (`{code, message, file}`); or `413` if a file is too large. `GET /api/uploads/{upload_id}` returns the stored manifest.
+
+```powershell
+curl.exe -X POST http://localhost:8000/api/uploads -F mode=optical_sar -F file_1=@optical.tif -F file_2=@sar.tif
+```
 
 ## Frontend Setup
 

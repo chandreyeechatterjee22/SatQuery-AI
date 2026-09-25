@@ -3,3 +3,6 @@ uvicorn
 earthengine-api
 pydantic
 python-dotenv
+rasterio==1.5.1
+numpy==2.5.3
+python-multipart==0.0.32
