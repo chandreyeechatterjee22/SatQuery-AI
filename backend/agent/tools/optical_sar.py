@@ -5,12 +5,13 @@ averaged over the requested classes. It is a consensus measure, not a
 calibrated probability, and is None when only one modality could be used.
 """
 from agent import tasks
-from agent.registry import Tool, ToolResult
+from agent.registry import Tool, ToolNotAvailable, ToolResult
 from agent.tools.clip_common import preview_evidence
 from agent.tools.question_classes import classes_in
 from local_analysis import optical_sar
 from local_analysis.optical_sar import CLASS_LABELS, CLASSES, DEFAULTS
 from local_analysis.overlays import render_overlay
+from raster.band_adapter import PHOTO_DRIVERS
 
 COLOURS = {
     "water": {"both": "#1f6feb", "optical_only": "#79c0ff", "sar_only": "#a371f7"},
@@ -56,6 +57,9 @@ class OpticalSarTool(Tool):
         result = optical_sar.map_water_builtup(
             ctx.path(1), ctx.file(1)["bands"], ctx.path(2), ctx.file(2)["bands"],
             params={k: v for k, v in params.items() if k != "classes"}, classes=classes)
+        unusable = unusable_inputs(ctx, result)
+        if unusable:
+            raise ToolNotAvailable(" ".join(unusable), trace={"methods": result["methods"]})
 
         evidence = [preview_evidence(ctx, 1), preview_evidence(ctx, 2)]
         out_dir = ctx.query_dir(query_id)
@@ -94,6 +98,25 @@ class OpticalSarTool(Tool):
         return {"id": f"{cls}_overlay", "kind": "overlay", "class": cls, "base": "preview_1",
                 "label": f"{CLASS_LABELS[cls]} mask", "url": ctx.evidence_url(query_id, name),
                 "legend": [{"label": legend_labels[k], "color": colours[k]} for k in parts]}
+
+
+def unusable_inputs(ctx, result):
+    """Plain reasons why this pair cannot give meaningful water/built-up numbers (empty = fine).
+
+    GeoTIFF pairs with calibrated SAR are unaffected; an RGB GeoTIFF plus calibrated SAR still
+    gets a SAR-only answer.
+    """
+    reasons = []
+    if result["sar_calibrated"] is False:
+        reasons.append("The radar image does not contain calibrated backscatter (sigma0), e.g. it is a JPG/PNG "
+                       "picture of SAR data, so the dB thresholds for water and buildings cannot be applied. "
+                       "Upload a calibrated Sentinel-1 GeoTIFF (for example an ASF RTC product).")
+    m = result["methods"]
+    optical_is_photo = ctx.file(1)["metadata"]["driver"] in PHOTO_DRIVERS
+    if optical_is_photo and m["optical_water"] is None and m["optical_built_up"] is None:
+        reasons.append("The optical image is a photo with only red/green/blue, and water and built-up need "
+                       "near-infrared or SWIR bands. Upload a multispectral GeoTIFF (e.g. Sentinel-2 or Cartosat-2S).")
+    return reasons
 
 
 def answer_text(result, classes):

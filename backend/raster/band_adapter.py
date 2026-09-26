@@ -6,6 +6,7 @@ downstream asks for roles, never for "B4" or "B8".
 import re
 
 SENSORS = ("auto", "sentinel2", "cartosat2s", "bgrn", "rgb", "sar")
+PHOTO_DRIVERS = ("PNG", "JPEG", "WEBP")
 OPTICAL_ROLES = ("blue", "green", "red", "nir", "swir1", "swir2")
 SAR_ROLES = ("vv", "vh", "hh", "hv")
 
@@ -68,6 +69,11 @@ def resolve_bands(meta, sensor="auto", expected_kind=None, band_roles=None):
         return _from_sensor(sensor, count, "sensor_hint")
 
     from_desc = _from_descriptions(meta.get("band_descriptions") or [None] * count)
+    if not from_desc and meta.get("driver") in PHOTO_DRIVERS and expected_kind != "sar":
+        # Photos are RGB(A) or grayscale: an alpha channel is not NIR and one gray band is not radar.
+        if count >= 3:
+            return _profile("rgb", "optical", _FIXED_LAYOUTS["rgb"] + [None] * (count - 3), "band_count")
+        return _profile("photo_gray", "optical", [None] * count, "band_count")
     if from_desc:
         return from_desc
     if expected_kind == "sar" or (expected_kind is None and count <= 2):
