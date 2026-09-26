@@ -19,7 +19,8 @@ def test_query_ok(client, make_upload):
     body = r.json()
     assert body["status"] == "OK" and "EPSG:32643" in body["answer"]
     assert set(body) == {"query_id", "upload_id", "question", "status", "answer", "confidence",
-                         "evidence_images", "details", "trace"}
+                         "evidence_images", "details", "trace", "plain"}
+    assert body["plain"]["headline"] and body["plain"]["confidence"]["level"] == "High"
 
 
 def test_query_unknown_upload_404(client):
