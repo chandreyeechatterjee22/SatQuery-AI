@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FiCpu } from 'react-icons/fi';
 import { askQuestion, createUpload, describeError, fetchTools } from '../api';
 import AnswerCard from './AnswerCard';
+import GeeFetch from './GeeFetch';
 import ImageViewer from './ImageViewer';
 import QuestionBox from './QuestionBox';
 import ReportButtons from './ReportButtons';
@@ -41,6 +42,13 @@ const UploadAnalysis = () => {
         }
     };
 
+    const handleFetched = (manifest) => {
+        setError('');
+        setResult(null);
+        setValidation({ ok: true, status: 201, body: manifest });
+        setUpload(manifest);
+    };
+
     const handleAsk = async (question) => {
         setBusy('query');
         setError('');
@@ -60,6 +68,7 @@ const UploadAnalysis = () => {
                     <h2 className="mb-3 text-base font-semibold text-white">Upload satellite images</h2>
                     <UploadForm onSubmit={handleUpload} busy={busy === 'upload'} />
                 </div>
+                <GeeFetch onFetched={handleFetched} disabled={busy !== ''} />
                 <ValidationResult result={validation} />
                 <ToolStatus tools={tools} />
             </aside>

@@ -13,10 +13,12 @@ from analysis.water import analyze_water
 from analysis.flood import analyze_flood
 from ingest.router import router as uploads_router
 from agent.router import router as agent_router
+from ingest.gee_router import router as gee_router
 
 app = FastAPI(title="SatQuery AI API")
 app.include_router(uploads_router)
 app.include_router(agent_router)
+app.include_router(gee_router)
 
 # Setup CORS
 app.add_middleware(

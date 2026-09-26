@@ -1,0 +1,175 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { MapContainer, TileLayer, FeatureGroup, Rectangle } from 'react-leaflet';
+import { EditControl } from 'react-leaflet-draw';
+import { FiCloud, FiChevronDown, FiChevronRight } from 'react-icons/fi';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw/dist/leaflet.draw.css';
+import { describeError, fetchAreas, fetchGeeStatus, fetchLocation, fetchStates, geeFetch } from '../api';
+import { bboxAround, bboxSizeKm, geeFetchProblems } from './lib/format.js';
+
+const inputClass = 'w-full rounded-lg border border-space-700 bg-space-900/70 px-2 py-1.5 text-xs text-white '
+    + 'focus:border-accent-cyan focus:outline-none';
+const MODES = [['single', 'Single image'], ['optical_sar', 'Optical + SAR'], ['bi_temporal', 'Two dates']];
+const DEFAULT_RANGES = [['2024-01-01', '2024-03-31'], ['2025-01-01', '2025-03-31']];
+
+/** "Fetch from Earth Engine": area + dates -> analysis-ready GeoTIFFs -> a normal upload. */
+const GeeFetch = ({ onFetched, disabled }) => {
+    const [open, setOpen] = useState(false);
+    const [status, setStatus] = useState(null);       // {configured, reason, max_side_km}
+    const [mode, setMode] = useState('optical_sar');
+    const [areaKind, setAreaKind] = useState('district');
+    const [states, setStates] = useState([]);
+    const [areas, setAreas] = useState([]);
+    const [state, setState] = useState('');
+    const [area, setArea] = useState('');
+    const [centre, setCentre] = useState(null);       // {lat, lon}
+    const [sizeKm, setSizeKm] = useState(5);
+    const [drawn, setDrawn] = useState(null);         // [w, s, e, n]
+    const [ranges, setRanges] = useState(DEFAULT_RANGES);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!open || status) return;
+        fetchGeeStatus().then(setStatus)
+            .catch((err) => setStatus({ configured: false, reason: describeError(err) }));
+        fetchStates().then((d) => setStates(d.states || [])).catch(() => {});
+    }, [open, status]);
+
+    useEffect(() => {
+        setAreas([]); setArea(''); setCentre(null);
+        if (state) fetchAreas(state).then((d) => setAreas(d.areas || [])).catch(() => {});
+    }, [state]);
+
+    useEffect(() => {
+        setCentre(null);
+        if (state && area) fetchLocation(state, area).then((l) => setCentre({ lat: l.lat, lon: l.lon })).catch(() => {});
+    }, [state, area]);
+
+    const bbox = useMemo(() => {
+        if (areaKind === 'draw') return drawn;
+        return centre ? bboxAround(centre.lat, centre.lon, Number(sizeKm)) : null;
+    }, [areaKind, drawn, centre, sizeKm]);
+    const maxKm = status?.max_side_km || 10;
+    const problems = geeFetchProblems(mode, bbox, ranges, maxKm);
+    const size = bbox ? bboxSizeKm(bbox) : null;
+
+    const setRange = (i, j, value) => setRanges(ranges.map((r, k) => (k === i ? r.map((v, m) => (m === j ? value : v)) : r)));
+
+    const onCreated = (e) => {
+        const b = e.layer.getBounds();
+        setDrawn([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((v) => Math.round(v * 1e6) / 1e6));
+        e.layer.remove();   // shown via <Rectangle> so only the latest one is kept
+    };
+
+    const submit = async () => {
+        if (problems.length || busy) return;
+        setBusy(true);
+        setError('');
+        try {
+            const used = mode === 'bi_temporal' ? ranges : [ranges[0]];
+            onFetched(await geeFetch(mode, bbox, used));
+        } catch (err) {
+            setError(describeError(err));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const notConfigured = status && !status.configured;
+    return (
+        <div className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
+            <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 text-left">
+                {open ? <FiChevronDown /> : <FiChevronRight />}
+                <FiCloud className="text-accent-cyan" />
+                <span className="text-base font-semibold text-white">Fetch from Earth Engine</span>
+            </button>
+            {open && (
+                <div className="mt-3 space-y-3 text-xs">
+                    <p className="text-gray-400">Downloads analysis-ready Sentinel-2 (and Sentinel-1 for Optical + SAR) GeoTIFFs
+                        for a small area (max {maxKm} x {maxKm} km) and uploads them for you.</p>
+
+                    <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Fetch mode">
+                        {MODES.map(([key, label]) => (
+                            <button key={key} type="button" role="radio" aria-checked={mode === key} onClick={() => setMode(key)}
+                                className={`rounded-lg border px-1 py-1.5 ${mode === key ? 'border-accent-cyan bg-accent-cyan/15 text-accent-cyan'
+                                    : 'border-space-700 text-gray-300 hover:border-accent-cyan/60'}`}>{label}</button>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-3 text-gray-300">
+                        <label className="flex items-center gap-1"><input type="radio" name="gee-area" checked={areaKind === 'district'}
+                            onChange={() => setAreaKind('district')} /> State / district</label>
+                        <label className="flex items-center gap-1"><input type="radio" name="gee-area" checked={areaKind === 'draw'}
+                            onChange={() => setAreaKind('draw')} /> Draw rectangle</label>
+                    </div>
+
+                    {areaKind === 'district' ? (
+                        <div className="grid grid-cols-3 gap-2">
+                            <label className="text-gray-400">State
+                                <select value={state} onChange={(e) => setState(e.target.value)} className={`${inputClass} mt-1`} aria-label="State">
+                                    <option value="">Select</option>
+                                    {states.map((s) => <option key={s}>{s}</option>)}
+                                </select>
+                            </label>
+                            <label className="text-gray-400">District
+                                <select value={area} onChange={(e) => setArea(e.target.value)} disabled={!state} className={`${inputClass} mt-1`}
+                                    aria-label="District">
+                                    <option value="">Select</option>
+                                    {areas.map((a) => <option key={a}>{a}</option>)}
+                                </select>
+                            </label>
+                            <label className="text-gray-400">Box size (km)
+                                <input type="number" min="1" max={maxKm} step="0.5" value={sizeKm}
+                                    onChange={(e) => setSizeKm(e.target.value)} className={`${inputClass} mt-1`} aria-label="Box size in km" />
+                            </label>
+                        </div>
+                    ) : (
+                        <div className="h-56 overflow-hidden rounded-lg border border-space-700" data-testid="gee-mini-map">
+                            <MapContainer center={[12.93, 77.66]} zoom={11} className="h-full w-full">
+                                <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                                    attribution="Esri" />
+                                <FeatureGroup>
+                                    <EditControl position="topleft" onCreated={onCreated}
+                                        // showArea: false avoids leaflet-draw 1.0.4's readableArea bug ('type is not defined').
+                                        draw={{ rectangle: { showArea: false, shapeOptions: { color: '#5BC0BE' } }, polygon: false, polyline: false,
+                                            circle: false, circlemarker: false, marker: false }}
+                                        edit={{ edit: false, remove: false }} />
+                                </FeatureGroup>
+                                {drawn && <Rectangle bounds={[[drawn[1], drawn[0]], [drawn[3], drawn[2]]]} pathOptions={{ color: '#5BC0BE' }} />}
+                            </MapContainer>
+                        </div>
+                    )}
+                    {size && <p className="text-gray-400">Area: {size.width.toFixed(1)} x {size.height.toFixed(1)} km</p>}
+
+                    {(mode === 'bi_temporal' ? [0, 1] : [0]).map((i) => (
+                        <div key={i} className="grid grid-cols-2 gap-2">
+                            <label className="text-gray-400">{mode === 'bi_temporal' ? `Date ${i + 1}: from` : 'From'}
+                                <input type="date" value={ranges[i][0]} onChange={(e) => setRange(i, 0, e.target.value)} className={`${inputClass} mt-1`} />
+                            </label>
+                            <label className="text-gray-400">to
+                                <input type="date" value={ranges[i][1]} onChange={(e) => setRange(i, 1, e.target.value)} className={`${inputClass} mt-1`} />
+                            </label>
+                        </div>
+                    ))}
+
+                    {problems.length > 0 && !notConfigured && (
+                        <ul className="list-disc pl-5 text-gray-400">{problems.map((p) => <li key={p}>{p}</li>)}</ul>
+                    )}
+                    {notConfigured && (
+                        <p role="note" className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200">
+                            {status.reason || 'Earth Engine not configured — use samples/ or upload GeoTIFFs.'}
+                        </p>
+                    )}
+                    <button type="button" onClick={submit} disabled={!status || notConfigured || disabled || busy || problems.length > 0}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-blue to-accent-cyan px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+                        <FiCloud /> {busy ? 'Fetching from Earth Engine (30-120 s)...' : 'Fetch from Earth Engine'}
+                    </button>
+                    {error && <p role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-red-200">{error}</p>}
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default GeeFetch;

@@ -74,6 +74,10 @@ def resolve_bands(meta, sensor="auto", expected_kind=None, band_roles=None):
         if count >= 3:
             return _profile("rgb", "optical", _FIXED_LAYOUTS["rgb"] + [None] * (count - 3), "band_count")
         return _profile("photo_gray", "optical", [None] * count, "band_count")
+    if not from_desc and meta.get("driver") in PHOTO_DRIVERS and expected_kind == "sar":
+        # A photo in the SAR slot: keep one brightness band, drop colour/transparency layers.
+        # The optical + SAR tool then reports that it is a photo, not calibrated radar data.
+        return _profile("photo", "sar", ["vv"] + [None] * (count - 1), "band_count")
     if from_desc:
         return from_desc
     if expected_kind == "sar" or (expected_kind is None and count <= 2):

@@ -129,3 +129,31 @@ test('files without an extension are left to the server and sent in photo mode',
     assert.equal(needsPhotoMode('photo.jpeg'), true);
     assert.equal(needsPhotoMode('scene.tif'), false);
 });
+
+test('Earth Engine fetch helpers', async () => {
+    const { bboxAround, bboxSizeKm, geeFetchProblems, GEOTIFF_SOURCES, needsGeoTiffHint } = await import('./format.js');
+    const box = bboxAround(12.93, 77.66, 5);
+    const size = bboxSizeKm(box);
+    assert.ok(Math.abs(size.width - 5) < 0.01 && Math.abs(size.height - 5) < 0.01);
+    assert.deepEqual(geeFetchProblems('optical_sar', box, [['2024-01-01', '2024-03-31']]), []);
+    assert.match(geeFetchProblems('single', bboxAround(12.9, 77.6, 15), [['2024-01-01', '2024-03-31']])[0],
+        /maximum is 10 x 10 km/);
+    assert.deepEqual(geeFetchProblems('single', null, [[]]), ['Choose an area (district or rectangle).', 'Enter date range.']);
+    assert.deepEqual(geeFetchProblems('bi_temporal', box, [['2021-01-01', '2021-03-31'], ['2025-03-01', '2025-01-01']]),
+        ['Date range 2 must start before it ends.']);
+    assert.equal(GEOTIFF_SOURCES.length, 5);
+    assert.ok(needsGeoTiffHint('The SAR image is a photo (JPG/PNG), not calibrated radar data'));
+    assert.ok(!needsGeoTiffHint('Water: 4.22% of the area'));
+});
+
+test('reports carry the Earth Engine source', () => {
+    const src = { provider: 'Google Earth Engine', crs: 'EPSG:32643', scale_m: 10, products: [
+        { product: 'Sentinel-2 L2A', collection: ['COPERNICUS/S2_SR_HARMONIZED'], date_range: ['2024-01-01', '2024-03-31'],
+          scenes: 5, bands: ['B2', 'B3'] }] };
+    const up = { ...upload, source: src };
+    assert.deepEqual(buildReportJson(up, result).upload.source, src);
+    const html = buildReportHtml(up, result, {}, 'now');
+    assert.ok(html.includes('Source: Google Earth Engine'));
+    assert.ok(html.includes('COPERNICUS/S2_SR_HARMONIZED 2024-01-01 to 2024-03-31 (5 scenes, bands B2,B3)'));
+    assert.equal(buildReportJson(upload, result).upload.source, null);
+});

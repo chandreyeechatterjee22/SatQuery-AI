@@ -1,5 +1,6 @@
 import React from 'react';
-import { confidenceBasis, formatConfidence, STATUS_STYLES } from './lib/format.js';
+import { confidenceBasis, formatConfidence, needsGeoTiffHint, STATUS_STYLES } from './lib/format.js';
+import GeoTiffSources from './GeoTiffSources';
 
 const TONES = {
     ok: 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300',
@@ -42,6 +43,8 @@ const AnswerCard = ({ result }) => {
                     )}
                 </div>
             </div>
+
+            {result.status !== 'OK' && needsGeoTiffHint(result.answer) && <GeoTiffSources />}
 
             {warnings.length > 0 && (
                 <ul className="mt-3 space-y-1 text-xs text-amber-200">

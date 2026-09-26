@@ -107,7 +107,11 @@ def unusable_inputs(ctx, result):
     gets a SAR-only answer.
     """
     reasons = []
-    if result["sar_calibrated"] is False:
+    if ctx.file(2)["metadata"]["driver"] in PHOTO_DRIVERS:
+        reasons.append("The SAR image is a photo (JPG/PNG), not calibrated radar data, so the dB thresholds "
+                       "for water and buildings cannot be applied. Upload a calibrated Sentinel-1 GeoTIFF "
+                       "(for example an ASF RTC product) or use 'Fetch from Earth Engine'.")
+    elif result["sar_calibrated"] is False:
         reasons.append("The radar image does not contain calibrated backscatter (sigma0), e.g. it is a JPG/PNG "
                        "picture of SAR data, so the dB thresholds for water and buildings cannot be applied. "
                        "Upload a calibrated Sentinel-1 GeoTIFF (for example an ASF RTC product).")

@@ -20,6 +20,9 @@ const TraceTimeline = ({ trace }) => {
                 <Fact label="Duration" value={formatMs(trace.duration_ms)} />
                 <Fact label="Inputs" value={(trace.inputs || []).map((i) => `${i.role || i.kind}: ${i.filename}`).join(', ') || '-'} />
                 <Fact label="Params" value={JSON.stringify(trace.params || {})} mono />
+                {trace.source && (
+                    <Fact label="Source" value={`${trace.source.provider}: ${trace.source.products.map((p) => `${p.collection[0]} ${p.date_range.join('..')} [${p.bands.join(',')}]`).join('; ')} @ ${trace.source.scale_m} m, ${trace.source.crs}`} />
+                )}
             </dl>
             <ol className="relative space-y-2 border-l border-space-700 pl-4">
                 {(trace.steps || []).map((s, i) => (

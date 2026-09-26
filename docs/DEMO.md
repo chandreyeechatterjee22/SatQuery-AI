@@ -62,6 +62,21 @@ What to show in each scenario:
   `landcover_model` entry with model name, version and bands
 - **Report (JSON)** and **Report (HTML)** (self-contained, images embedded)
 
+**Scenario 6: Fetch from Earth Engine** (needs Earth Engine auth, the same as the Map Analysis tab):
+1. In **Upload Analysis**, open **Fetch from Earth Engine**, choose **Optical + SAR**, pick **Draw rectangle** and
+   draw a box of a few km around Bellandur Lake (the mini map opens there), or use
+   `POST /api/gee/fetch` with bbox `[77.640, 12.915, 77.680, 12.945]`.
+2. Set the dates to 2024-01-01 to 2024-03-31 and click **Fetch from Earth Engine**.
+3. Expected result:
+   - **Upload:** accepted in about 10-25 s, with a Sentinel-2 L2A (6 bands, 18 cloud-masked scenes) and a
+     Sentinel-1 GRD (VV/VH dB, 6 scenes) GeoTIFF on one grid (EPSG:32643, 10 m, 439 x 337 px for that bbox,
+     100% overlap). Band roles are set automatically.
+   - **Answer:** *Map water and built-up areas* gives water **4.29%** and built-up **13.68%**. The
+     committed sample pair gives 4.22% / 14.27%, because it was made with a simpler cloud filter.
+   - **Source:** the trace and reports show `Google Earth Engine`, the collection IDs, date ranges, bands and scale.
+   - **Limits:** boxes over 10 x 10 km are refused with a message. Without Earth Engine credentials the
+     button is disabled with "Earth Engine not configured - use samples/ or upload GeoTIFFs".
+
 ## 3. Same scenarios from the command line
 
 ```powershell

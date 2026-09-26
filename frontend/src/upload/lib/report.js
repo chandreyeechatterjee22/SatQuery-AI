@@ -28,6 +28,7 @@ export function buildReportJson(upload, result, generatedAt = new Date().toISOSt
                 band_roles: f.bands?.roles,
             })),
             warnings: upload.warnings || [],
+            source: upload.source || null,
         },
         query: result,
     };
@@ -78,6 +79,7 @@ figure{display:inline-block;margin:.5rem;max-width:45%}figure img{max-width:100%
  &middot; tool <strong>${escapeHtml(trace.tool || '-')}</strong> ${escapeHtml(trace.tool_version || '')}
  &middot; ${escapeHtml(formatMs(trace.duration_ms))} &middot; status ${escapeHtml(trace.status)}</p>
 <p>Params: <code>${escapeHtml(JSON.stringify(trace.params || {}))}</code></p>
+${upload.source ? `<p>Source: ${escapeHtml(upload.source.provider)} &middot; ${escapeHtml(upload.source.products.map((p) => `${p.collection.join(' + ')} ${p.date_range.join(' to ')} (${p.scenes} scenes, bands ${p.bands.join(',')})`).join('; '))} &middot; ${escapeHtml(upload.source.crs)}, ${escapeHtml(upload.source.scale_m)} m</p>` : ''}
 <table><tr><th>Step</th><th>Status</th><th>Duration</th><th>Detail</th></tr>${stepRows}</table>
 <h2>Inputs</h2>
 <table><tr><th>Slot</th><th>File</th><th>Kind</th><th>Date</th><th>Bands</th><th>CRS</th></tr>${fileRows}</table>

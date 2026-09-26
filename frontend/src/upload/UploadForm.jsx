@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FiUploadCloud, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import { MODES, needsPhotoMode, SENSORS, uploadProblems } from './lib/format.js';
+import GeoTiffSources from './GeoTiffSources';
 
 const inputClass = 'w-full rounded-lg border border-space-700 bg-space-900/70 px-3 py-2 text-sm text-white '
     + 'focus:border-accent-cyan focus:outline-none';
@@ -107,10 +108,11 @@ const UploadForm = ({ onSubmit, busy }) => {
             )}
 
             {hasPhoto && (
-                <p className="rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-2 text-xs text-gray-300">
+                <div className="rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-2 text-xs text-gray-300">
                     JPG/PNG photo: uploaded in photo (benchmark) mode. Photos have no map coordinates or infrared bands,
                     so captioning, question answering and metadata work; water/built-up and change analysis need GeoTIFFs.
-                </p>
+                    <GeoTiffSources />
+                </div>
             )}
 
             {problems.length > 0 && (
