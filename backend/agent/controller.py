@@ -7,7 +7,7 @@ import json
 import time
 import uuid
 
-from agent import tasks
+from agent import plain, tasks
 from agent.context import UploadContext
 from agent.params import validate_params
 from agent.registry import NOT_AVAILABLE, OK, ToolNotAvailable, default_registry
@@ -158,6 +158,8 @@ class _Run:
                 **({"source": self.ctx.manifest["source"]} if self.ctx.manifest.get("source") else {}),
             },
         }
+        # Everyday-language version of the same result (templates only, same numbers).
+        response["plain"] = plain.explain(response, self.ctx)
         out = self.ctx.query_dir(self.query_id) / "result.json"
         out.write_text(json.dumps(response, indent=2), encoding="utf-8")
         return response

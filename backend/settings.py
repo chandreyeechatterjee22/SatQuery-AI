@@ -47,3 +47,20 @@ def max_upload_bytes():
     except ValueError:
         mb = DEFAULT_MAX_UPLOAD_MB
     return int(mb * 1024 * 1024)
+
+
+DEFAULT_PLAIN_CONFIDENCE_HIGH = 0.75
+DEFAULT_PLAIN_CONFIDENCE_MEDIUM = 0.4
+
+
+def plain_confidence_thresholds():
+    """(high, medium) cut-offs that map a numeric confidence to High / Medium / Low
+    in plain-language answers (env PLAIN_CONFIDENCE_HIGH, PLAIN_CONFIDENCE_MEDIUM)."""
+    def read(name, default):
+        try:
+            return float(os.getenv(name) or default)
+        except ValueError:
+            return default
+    high = read("PLAIN_CONFIDENCE_HIGH", DEFAULT_PLAIN_CONFIDENCE_HIGH)
+    medium = read("PLAIN_CONFIDENCE_MEDIUM", DEFAULT_PLAIN_CONFIDENCE_MEDIUM)
+    return (high, medium) if medium <= high else (DEFAULT_PLAIN_CONFIDENCE_HIGH, DEFAULT_PLAIN_CONFIDENCE_MEDIUM)

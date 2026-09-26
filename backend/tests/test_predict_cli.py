@@ -67,3 +67,20 @@ def test_task_mismatch_is_flagged(tmp_path, upload_dir):
     predict.main(["--task", "vqa", "--input", str(manifest), "--out", str(out)])
     p = json.loads(out.read_text())["predictions"][0]
     assert p["status"] == "OK" and p["task_mismatch"] == "routed to 'metadata', not 'vqa'"
+
+
+def test_predictions_keep_short_canonical_answers_without_plain_text(tmp_path, upload_dir):
+    """The batch CLI is for benchmark scoring: plain-language answers must not leak into it."""
+    before, after = bitemporal_scene()
+    make_geotiff(tmp_path / "t1.tif", count=4, data=before)
+    make_geotiff(tmp_path / "t2.tif", count=4, data=after)
+    manifest = tmp_path / "m.json"
+    manifest.write_text(json.dumps([{"id": "c1", "mode": "bi_temporal", "images": ["t1.tif", "t2.tif"],
+                                     "dates": ["2021-01-01", "2025-01-01"], "sensors": ["cartosat2s", "cartosat2s"],
+                                     "question": "Has built-up area increased?"}]))
+    out = tmp_path / "p.json"
+    predict.main(["--task", "change", "--input", str(manifest), "--out", str(out)])
+    p = json.loads(out.read_text())["predictions"][0]
+    assert p["answer"] == "increased"
+    assert set(p) == {"id", "question", "status", "answer", "confidence", "task", "tool", "tool_version",
+                      "answered_by", "upload_id", "query_id", "seconds"}

@@ -4,6 +4,7 @@ import { askQuestion, createUpload, describeError, fetchTools } from '../api';
 import AnswerCard from './AnswerCard';
 import GeeFetch from './GeeFetch';
 import ImageViewer from './ImageViewer';
+import PlainAnswer from './PlainAnswer';
 import QuestionBox from './QuestionBox';
 import ReportButtons from './ReportButtons';
 import TraceTimeline from './TraceTimeline';
@@ -87,12 +88,25 @@ const UploadAnalysis = () => {
                     <div className="grid gap-4 xl:grid-cols-2">
                         <ImageViewer upload={upload} result={result} />
                         <div className="space-y-4 min-w-0">
-                            <AnswerCard result={result} />
+                            <PlainAnswer result={result} onAsk={handleAsk} askDisabled={busy !== ''} />
                             <ReportButtons upload={upload} result={result} />
                         </div>
                     </div>
                 )}
-                {result && <TraceTimeline trace={result.trace} />}
+                {result && (
+                    // Closed by default when there is a plain answer; open when the server sent none.
+                    <details key={result.query_id} open={!result.plain} data-testid="technical-details"
+                        className="rounded-2xl border border-space-700/60 bg-space-800/40 p-3">
+                        <summary className="cursor-pointer select-none text-sm font-semibold text-gray-200 hover:text-accent-cyan">
+                            Technical details
+                            <span className="ml-2 text-xs font-normal text-gray-500">full answer, confidence basis, raw numbers, execution trace</span>
+                        </summary>
+                        <div className="mt-3 space-y-4">
+                            <AnswerCard result={result} />
+                            <TraceTimeline trace={result.trace} />
+                        </div>
+                    </details>
+                )}
                 {!upload && (
                     <p className="rounded-2xl border border-dashed border-space-700 p-8 text-center text-sm text-gray-500">
                         Upload a GeoTIFF (or an optical + SAR pair, or two dates) to start asking questions.

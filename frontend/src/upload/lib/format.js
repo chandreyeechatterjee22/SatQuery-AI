@@ -57,6 +57,14 @@ export const STATUS_STYLES = {
     ERROR: { label: 'Error', tone: 'error' },
 };
 
+/** Badge colours for the plain answer's confidence words. */
+export const CONFIDENCE_LEVEL_STYLES = {
+    High: 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300',
+    Medium: 'border-amber-500/50 bg-amber-500/15 text-amber-300',
+    Low: 'border-red-500/50 bg-red-500/15 text-red-300',
+    'Not rated': 'border-gray-500/50 bg-gray-500/15 text-gray-300',
+};
+
 const CONFIDENCE_BASIS = {
     modality_agreement: 'optical/SAR agreement',
     'threshold_robustness x season_consistency': 'threshold robustness x season consistency',
