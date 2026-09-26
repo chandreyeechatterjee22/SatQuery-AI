@@ -16,7 +16,7 @@ const AnswerCard = ({ result }) => {
     const warnings = (result.details?.warnings || []).filter((w) => !result.answer?.includes(w));
 
     return (
-        <section aria-label="Answer" className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
+        <section aria-label="Technical answer" className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <span className={`rounded-full border px-3 py-0.5 text-xs font-semibold ${TONES[style.tone]}`}>
                     {style.label}{result.status !== 'OK' ? ` (${result.status})` : ''}
@@ -44,12 +44,21 @@ const AnswerCard = ({ result }) => {
                 </div>
             </div>
 
-            {result.status !== 'OK' && needsGeoTiffHint(result.answer) && <GeoTiffSources />}
+            {!result.plain && result.status !== 'OK' && needsGeoTiffHint(result.answer) && <GeoTiffSources />}
 
             {warnings.length > 0 && (
                 <ul className="mt-3 space-y-1 text-xs text-amber-200">
                     {warnings.map((w, i) => <li key={i}>⚠ {w}</li>)}
                 </ul>
+            )}
+
+            {result.details && Object.keys(result.details).length > 0 && (
+                <details className="mt-3 text-xs text-gray-400">
+                    <summary className="cursor-pointer hover:text-accent-cyan">Raw numbers</summary>
+                    <pre className="mt-1 max-h-72 overflow-auto rounded-lg bg-space-900 p-2 text-[11px] text-gray-300">
+                        {JSON.stringify(result.details, null, 2)}
+                    </pre>
+                </details>
             )}
         </section>
     );

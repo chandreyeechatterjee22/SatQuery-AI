@@ -106,6 +106,37 @@ test('HTML report is escaped, self-contained and includes trace + evidence', () 
     assert.ok(html.includes('opt.tif'));
 });
 
+const plain = {
+    headline: 'About 25.0% of the area is <water>.',
+    what_it_means: 'We looked for water.',
+    key_numbers: ['Water: 25.00% of the area (1,600 m²)'],
+    how_we_know: 'We used a radar (SAR) image.',
+    confidence: { level: 'Medium', reason: 'they agree on 67%.', text: 'Medium — they agree on 67%.' },
+    caveats: ['These are photos.'],
+    next_step: 'Where is the water?',
+};
+
+test('JSON report puts the plain answer first, technical details after', () => {
+    const r = buildReportJson(upload, { ...result, plain }, 'now');
+    assert.deepEqual(Object.keys(r).slice(0, 3), ['report', 'generated_at', 'answer']);
+    assert.equal(r.answer.headline, plain.headline);
+    assert.equal(r.answer.status, 'OK');
+    assert.deepEqual(r.answer.key_numbers, plain.key_numbers);
+    assert.equal(r.query.answer, result.answer);   // technical answer kept below
+    assert.equal(buildReportJson(upload, result).answer.headline, null);
+});
+
+test('HTML report shows the plain answer above the technical details', () => {
+    const html = buildReportHtml(upload, { ...result, plain }, {}, 'now');
+    const plainAt = html.indexOf('About 25.0% of the area is &lt;water&gt;.');
+    const techAt = html.indexOf('<h2>Technical details</h2>');
+    assert.ok(plainAt > 0 && techAt > plainAt);
+    assert.ok(html.indexOf('Water: 25.00%') < techAt && html.indexOf('optical_sar_mapper') > techAt);
+    assert.ok(html.includes('class="badge medium">Medium confidence'));
+    assert.ok(html.includes('These are photos.') && html.includes('Where is the water?'));
+    assert.ok(buildReportHtml(upload, result, {}, 'now').includes('No plain-language answer'));
+});
+
 test('report filenames', () => {
     assert.equal(reportFilename(upload, result, 'json'), 'satquery-report-q9876543.json');
     assert.equal(reportFilename(upload, null, 'html'), 'satquery-report-abc123de.html');
