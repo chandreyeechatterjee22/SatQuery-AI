@@ -11,6 +11,7 @@ function App() {
     const [states, setStates] = useState([]);
     const [selectedState, setSelectedState] = useState('');
     const [areas, setAreas] = useState([]);
+    const [majorCities, setMajorCities] = useState([]);
     const [selectedArea, setSelectedArea] = useState('');
     const [query, setQuery] = useState('');
 
@@ -36,11 +37,17 @@ function App() {
     }, []);
 
     useEffect(() => {
+        let stale = false;
+        setAreas([]);
+        setMajorCities([]);
         if (selectedState) {
-            fetchAreas(selectedState).then(data => setAreas(data.areas || []));
-        } else {
-            setAreas([]);
+            fetchAreas(selectedState).then(data => {
+                if (stale) return;  // the user already picked another state
+                setAreas(data.areas || []);
+                setMajorCities(data.major_cities || []);
+            });
         }
+        return () => { stale = true; };
     }, [selectedState]);
 
     const handleStateChange = (e) => {
@@ -48,6 +55,18 @@ function App() {
         // ever observes a (newState, oldArea) combination.
         setSelectedState(e.target.value);
         setSelectedArea('');
+    };
+
+    // Picking a district flies the map there (the Explore Area button still works too).
+    const handleAreaChange = async (e) => {
+        const area = e.target.value;
+        setSelectedArea(area);
+        if (!selectedState || !area) return;
+        try {
+            setFlyToLocation(await fetchLocation(selectedState, area));
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const handleGeometryChange = (geom) => {
@@ -132,7 +151,8 @@ function App() {
                     onStateChange={handleStateChange}
                     areas={areas}
                     selectedArea={selectedArea}
-                    onAreaChange={(e) => setSelectedArea(e.target.value)}
+                    onAreaChange={handleAreaChange}
+                    majorCities={majorCities}
                     onExploreArea={handleExploreArea}
                     query={query}
                     onQuerySelect={setQuery}

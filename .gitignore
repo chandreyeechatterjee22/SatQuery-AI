@@ -29,6 +29,11 @@ npm-debug.log*
 
 # --- Data, uploads, outputs ---
 data/
+# ...except the small generated location list the backend ships with
+!backend/data/
+backend/data/*
+!backend/data/india_locations.json
+!backend/data/README.md
 uploads/
 outputs/
 reports/

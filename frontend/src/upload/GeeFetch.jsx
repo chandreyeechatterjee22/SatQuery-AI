@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
-import { MapContainer, TileLayer, FeatureGroup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, FeatureGroup, Rectangle, useMap } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import { FiCloud, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import { describeError, fetchAreas, fetchGeeStatus, fetchLocation, fetchStates, geeFetch } from '../api';
 import { bboxAround, bboxSizeKm, geeFetchProblems } from './lib/format.js';
+import DistrictSelect from '../components/DistrictSelect';
 
 const inputClass = 'w-full rounded-lg border border-space-700 bg-space-900/70 px-2 py-1.5 text-xs text-white '
     + 'focus:border-accent-cyan focus:outline-none';
@@ -19,6 +20,16 @@ const ResizeWatcher = ({ expanded }) => {
     useEffect(() => { const t = setTimeout(() => map.invalidateSize(), 60); return () => clearTimeout(t); }, [expanded, map]);
     return null;
 };
+
+/** Fly the preview map to the chosen district. */
+const FlyTo = ({ centre }) => {
+    const map = useMap();
+    useEffect(() => { if (centre) map.flyTo([centre.lat, centre.lon], centre.zoom, { duration: 1 }); }, [centre, map]);
+    return null;
+};
+
+const IMAGERY_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const DEFAULT_CENTRE = { lat: 12.93, lon: 77.66, zoom: 12 };  // Bellandur, Bengaluru
 
 /** Re-create the editable rectangle if the map was re-mounted (e.g. after switching area type). */
 const RestoreRectangle = ({ drawn, groupRef }) => {
@@ -39,9 +50,10 @@ const GeeFetch = ({ onFetched, disabled }) => {
     const [areaKind, setAreaKind] = useState('district');
     const [states, setStates] = useState([]);
     const [areas, setAreas] = useState([]);
+    const [majorCities, setMajorCities] = useState([]);
     const [state, setState] = useState('');
     const [area, setArea] = useState('');
-    const [centre, setCentre] = useState(null);       // {lat, lon}
+    const [centre, setCentre] = useState(null);       // {lat, lon, zoom}
     const [sizeKm, setSizeKm] = useState(5);
     const [drawn, setDrawn] = useState(null);         // [w, s, e, n]
     const [ranges, setRanges] = useState(DEFAULT_RANGES);
@@ -58,13 +70,21 @@ const GeeFetch = ({ onFetched, disabled }) => {
     }, [open, status]);
 
     useEffect(() => {
-        setAreas([]); setArea(''); setCentre(null);
-        if (state) fetchAreas(state).then((d) => setAreas(d.areas || [])).catch(() => {});
+        let stale = false;
+        setAreas([]); setMajorCities([]); setArea(''); setCentre(null);
+        if (state) {
+            fetchAreas(state).then((d) => {
+                if (stale) return;
+                setAreas(d.areas || []);
+                setMajorCities(d.major_cities || []);
+            }).catch(() => {});
+        }
+        return () => { stale = true; };
     }, [state]);
 
     useEffect(() => {
         setCentre(null);
-        if (state && area) fetchLocation(state, area).then((l) => setCentre({ lat: l.lat, lon: l.lon })).catch(() => {});
+        if (state && area) fetchLocation(state, area).then((l) => setCentre({ lat: l.lat, lon: l.lon, zoom: l.zoom })).catch(() => {});
     }, [state, area]);
 
     const bbox = useMemo(() => {
@@ -126,30 +146,37 @@ const GeeFetch = ({ onFetched, disabled }) => {
 
                     <div className="flex gap-3 text-gray-300">
                         <label className="flex items-center gap-1"><input type="radio" name="gee-area" checked={areaKind === 'district'}
-                            onChange={() => setAreaKind('district')} /> State / district</label>
+                            onChange={() => setAreaKind('district')} /> State / UT and district</label>
                         <label className="flex items-center gap-1"><input type="radio" name="gee-area" checked={areaKind === 'draw'}
                             onChange={() => setAreaKind('draw')} /> Draw rectangle</label>
                     </div>
 
                     {areaKind === 'district' ? (
-                        <div className="grid grid-cols-3 gap-2">
-                            <label className="text-gray-400">State
-                                <select value={state} onChange={(e) => setState(e.target.value)} className={`${inputClass} mt-1`} aria-label="State">
-                                    <option value="">Select</option>
-                                    {states.map((s) => <option key={s}>{s}</option>)}
-                                </select>
-                            </label>
-                            <label className="text-gray-400">District
-                                <select value={area} onChange={(e) => setArea(e.target.value)} disabled={!state} className={`${inputClass} mt-1`}
-                                    aria-label="District">
-                                    <option value="">Select</option>
-                                    {areas.map((a) => <option key={a}>{a}</option>)}
-                                </select>
-                            </label>
-                            <label className="text-gray-400">Box size (km)
+                        <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                                <label className="text-gray-400">State / UT
+                                    <select value={state} onChange={(e) => setState(e.target.value)} className={`${inputClass} mt-1`} aria-label="State / UT">
+                                        <option value="">Select state / UT</option>
+                                        {states.map((s) => <option key={s}>{s}</option>)}
+                                    </select>
+                                </label>
+                                <label className="text-gray-400">District / City
+                                    <DistrictSelect value={area} onChange={(e) => setArea(e.target.value)} areas={areas} majorCities={majorCities}
+                                        disabled={!state} className={`${inputClass} mt-1`} aria-label="District / City" placeholder="Select" />
+                                </label>
+                            </div>
+                            <label className="block text-gray-400">Box size around the district centre (km)
                                 <input type="number" min="1" max={maxKm} step="0.5" value={sizeKm}
                                     onChange={(e) => setSizeKm(e.target.value)} className={`${inputClass} mt-1`} aria-label="Box size in km" />
                             </label>
+                            <p className="text-gray-500">Large districts are only partly covered — use Draw rectangle for a specific spot.</p>
+                            <div className="h-48 overflow-hidden rounded-lg border border-space-700" data-testid="gee-district-map">
+                                <MapContainer center={[DEFAULT_CENTRE.lat, DEFAULT_CENTRE.lon]} zoom={5} className="h-full w-full" scrollWheelZoom={false}>
+                                    <TileLayer url={IMAGERY_URL} attribution="Esri" />
+                                    <FlyTo centre={centre} />
+                                    {bbox && <Rectangle bounds={[[bbox[1], bbox[0]], [bbox[3], bbox[2]]]} pathOptions={{ color: '#5BC0BE', weight: 2 }} />}
+                                </MapContainer>
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -167,9 +194,10 @@ const GeeFetch = ({ onFetched, disabled }) => {
                                     </div>
                                 )}
                                 <div className={`${expanded ? 'flex-1' : 'h-72'} overflow-hidden rounded-lg border border-space-700`}>
-                                    <MapContainer center={[12.93, 77.66]} zoom={12} className="h-full w-full">
-                                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                                            attribution="Esri" />
+                                    {/* Opens on the chosen district when there is one, else on Bellandur. */}
+                                    <MapContainer center={[(centre || DEFAULT_CENTRE).lat, (centre || DEFAULT_CENTRE).lon]}
+                                        zoom={centre ? Math.max(centre.zoom, 11) : DEFAULT_CENTRE.zoom} className="h-full w-full">
+                                        <TileLayer url={IMAGERY_URL} attribution="Esri" />
                                         <ResizeWatcher expanded={expanded} />
                                         <FeatureGroup ref={groupRef}>
                                             <EditControl position="topleft" onCreated={onCreated} onEdited={onEdited} onDeleted={onDeleted}
