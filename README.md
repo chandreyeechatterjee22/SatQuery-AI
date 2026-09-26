@@ -189,6 +189,19 @@ npm run dev
 
 The app will be available at `http://localhost:5173`. Make sure the backend is running at the URL in `VITE_API_BASE_URL`.
 
+The header has two tabs:
+- **Map Analysis:** the original Earth Engine flow, unchanged.
+- **Upload Analysis:** the upload-based agent flow.
+  - Pick a mode, upload files; validation results and rejection reasons appear inline.
+  - Ask a question or click an example chip.
+  - See the answer with a confidence bar and what the confidence means, the preview images with toggleable overlays, legends and an opacity slider, and the execution trace timeline.
+  - Download a JSON or self-contained HTML report (evidence images are embedded).
+  - Tools the server cannot run are shown as `NOT_AVAILABLE`.
+
+Frontend unit tests (Node's built-in test runner, no extra packages): `npm test`
+
+If another service already uses port 8000, run the backend on another port and set `VITE_API_BASE_URL` accordingly, e.g. `$env:VITE_API_BASE_URL="http://127.0.0.1:8001/api"; npm run dev`.
+
 ## Features
 - **Real GEE Integration:** Performs calculations strictly within user-drawn AOIs.
 - **Sentinel-2 Harmonized:** Uses the latest available cloud-free composites via Cloud Score+.
