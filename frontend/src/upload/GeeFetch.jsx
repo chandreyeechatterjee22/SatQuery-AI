@@ -8,6 +8,8 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import { describeError, fetchAreas, fetchGeeStatus, fetchLocation, fetchStates, geeFetch } from '../api';
 import { bboxAround, bboxSizeKm, geeFetchProblems } from './lib/format.js';
 import DistrictSelect from '../components/DistrictSelect';
+import MapAutoResize from '../components/MapAutoResize';
+import { ESRI_IMAGERY_URL, imageryTileOptions } from './lib/mapTiles.js';
 
 const inputClass = 'w-full rounded-lg border border-space-700 bg-space-900/70 px-2 py-1.5 text-xs text-white '
     + 'focus:border-accent-cyan focus:outline-none';
@@ -28,7 +30,6 @@ const FlyTo = ({ centre }) => {
     return null;
 };
 
-const IMAGERY_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const DEFAULT_CENTRE = { lat: 12.93, lon: 77.66, zoom: 12 };  // Bellandur, Bengaluru
 
 /** Re-create the editable rectangle if the map was re-mounted (e.g. after switching area type). */
@@ -172,7 +173,8 @@ const GeeFetch = ({ onFetched, disabled }) => {
                             <p className="text-gray-500">Large districts are only partly covered — use Draw rectangle for a specific spot.</p>
                             <div className="h-48 overflow-hidden rounded-lg border border-space-700" data-testid="gee-district-map">
                                 <MapContainer center={[DEFAULT_CENTRE.lat, DEFAULT_CENTRE.lon]} zoom={5} className="h-full w-full" scrollWheelZoom={false}>
-                                    <TileLayer url={IMAGERY_URL} attribution="Esri" />
+                                    <TileLayer url={ESRI_IMAGERY_URL} attribution="Esri" {...imageryTileOptions(window.devicePixelRatio)} />
+                                    <MapAutoResize />
                                     <FlyTo centre={centre} />
                                     {bbox && <Rectangle bounds={[[bbox[1], bbox[0]], [bbox[3], bbox[2]]]} pathOptions={{ color: '#5BC0BE', weight: 2 }} />}
                                 </MapContainer>
@@ -197,7 +199,8 @@ const GeeFetch = ({ onFetched, disabled }) => {
                                     {/* Opens on the chosen district when there is one, else on Bellandur. */}
                                     <MapContainer center={[(centre || DEFAULT_CENTRE).lat, (centre || DEFAULT_CENTRE).lon]}
                                         zoom={centre ? Math.max(centre.zoom, 11) : DEFAULT_CENTRE.zoom} className="h-full w-full">
-                                        <TileLayer url={IMAGERY_URL} attribution="Esri" />
+                                        <TileLayer url={ESRI_IMAGERY_URL} attribution="Esri" {...imageryTileOptions(window.devicePixelRatio)} />
+                                    <MapAutoResize />
                                         <ResizeWatcher expanded={expanded} />
                                         <FeatureGroup ref={groupRef}>
                                             <EditControl position="topleft" onCreated={onCreated} onEdited={onEdited} onDeleted={onDeleted}

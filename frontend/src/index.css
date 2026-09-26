@@ -109,3 +109,10 @@ html, body, #root {
 .leaflet-control-attribution a {
   color: var(--color-accent-cyan) !important;
 }
+
+/* Map background where tiles have not loaded yet. Unlayered on purpose: Tailwind v4 utilities live in
+   a cascade layer, and leaflet.css's own (unlayered) light grey #ddd would otherwise always win and
+   flash a white/grey block while zooming. */
+.leaflet-container {
+  background: var(--color-space-900);
+}
