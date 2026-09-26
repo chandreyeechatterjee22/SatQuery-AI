@@ -3,7 +3,7 @@
 export const MODES = {
     single: {
         label: 'Single image',
-        files: [{ slot: 1, label: 'Image', hint: 'GeoTIFF (any band count)' }],
+        files: [{ slot: 1, label: 'Image', hint: 'GeoTIFF with any band count, or a JPG/PNG photo' }],
         needsDates: false,
     },
     optical_sar: {
@@ -31,18 +31,21 @@ export const EXAMPLES = {
         'Describe this image',
         'Is there a water area?',
         'Is it a rural or an urban area?',
+        'How many buildings are there?',
         'How many bands does this image have?',
     ],
     optical_sar: [
         'Where is the water?',
         'How much of the area is built-up?',
         'Map water and built-up areas',
+        'Show flooded areas',
         'What is the resolution of each image?',
     ],
     bi_temporal: [
         'What changed?',
         'Has built-up area increased, decreased or remained unchanged?',
         'Has vegetation changed?',
+        'Has the water area changed?',
         'What are the acquisition dates?',
     ],
 };
@@ -62,6 +65,12 @@ const CONFIDENCE_BASIS = {
 
 /** Missing inputs that block the upload button, as user-facing sentences. */
 const IMAGE_EXT = /\.(png|jpe?g)$/i;
+
+/** False for names like "sar 1" (extension lost when renaming); the server then detects the type from content. */
+export const hasExtension = (name) => /\.[^.\\/\s]+$/.test(name || '');
+
+/** Files that go up in photo (benchmark) mode: JPG/PNG, or files whose type the server must detect. */
+export const needsPhotoMode = (name) => IMAGE_EXT.test(name || '') || !hasExtension(name);
 const GEOTIFF_EXT = /\.tiff?$/i;
 
 export function uploadProblems(mode, files, dates, benchmark = false) {
@@ -74,7 +83,7 @@ export function uploadProblems(mode, files, dates, benchmark = false) {
         else if (!file.name) continue;
         else if (IMAGE_EXT.test(file.name) && !benchmark) {
             problems.push(`${file.name} is a PNG/JPEG. Upload a GeoTIFF (.tif), or turn on Benchmark mode under Advanced.`);
-        } else if (!GEOTIFF_EXT.test(file.name) && !IMAGE_EXT.test(file.name)) {
+        } else if (hasExtension(file.name) && !GEOTIFF_EXT.test(file.name) && !IMAGE_EXT.test(file.name)) {
             problems.push(`${file.name} is not a supported image. Use a GeoTIFF (.tif/.tiff).`);
         }
     }

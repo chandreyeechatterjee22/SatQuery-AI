@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-    confidenceBasis, EXAMPLES, formatConfidence, formatMs, humanize, MODES, splitEvidence, uploadProblems,
+    confidenceBasis, EXAMPLES, formatConfidence, formatMs, hasExtension, humanize, MODES, needsPhotoMode, splitEvidence,
+    uploadProblems,
 } from './format.js';
 import { buildReportHtml, buildReportJson, escapeHtml, reportFilename } from './report.js';
 
@@ -38,7 +39,7 @@ const result = {
 test('every mode has files and example questions', () => {
     for (const mode of Object.keys(MODES)) {
         assert.ok(MODES[mode].files.length >= 1);
-        assert.ok(EXAMPLES[mode].length >= 3);
+        assert.equal(EXAMPLES[mode].length, 5);
     }
 });
 
@@ -117,4 +118,14 @@ test('uploadProblems explains PNG/JPEG and unsupported files instead of hiding t
     assert.deepEqual(uploadProblems('single', { 1: { name: 'photo.png' } }, {}, true), []);
     assert.deepEqual(uploadProblems('single', { 1: { name: 'notes.pdf' } }, {}),
         ['notes.pdf is not a supported image. Use a GeoTIFF (.tif/.tiff).']);
+});
+
+test('files without an extension are left to the server and sent in photo mode', () => {
+    assert.equal(hasExtension('sar 1'), false);
+    assert.equal(hasExtension('scene.tif'), true);
+    assert.equal(hasExtension('my.folder/scene'), false);
+    assert.deepEqual(uploadProblems('single', { 1: { name: 'sar 1' } }, {}), []);
+    assert.equal(needsPhotoMode('sar 1'), true);
+    assert.equal(needsPhotoMode('photo.jpeg'), true);
+    assert.equal(needsPhotoMode('scene.tif'), false);
 });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FiUploadCloud, FiChevronDown, FiChevronRight } from 'react-icons/fi';
-import { MODES, SENSORS, uploadProblems } from './lib/format.js';
+import { MODES, needsPhotoMode, SENSORS, uploadProblems } from './lib/format.js';
 
 const inputClass = 'w-full rounded-lg border border-space-700 bg-space-900/70 px-3 py-2 text-sm text-white '
     + 'focus:border-accent-cyan focus:outline-none';
@@ -15,12 +15,11 @@ const UploadForm = ({ onSubmit, busy }) => {
     const [advanced, setAdvanced] = useState(false);
 
     const spec = MODES[mode];
-    // PNG/JPEG photos are uploaded in benchmark mode automatically (the backend only accepts them there).
-    const hasPhoto = Object.values(files).some((f) => /\.(png|jpe?g)$/i.test(f?.name || ''));
+    // PNG/JPEG photos (and files whose extension was lost) are uploaded in benchmark mode automatically.
+    const hasPhoto = Object.values(files).some((f) => f && needsPhotoMode(f.name));
     const photoMode = benchmark || hasPhoto;
     const problems = uploadProblems(mode, files, dates, photoMode);
-    // Always list PNG/JPEG too: filtering them out made folders of photos look empty in the Windows picker.
-    const accept = '.tif,.tiff,.png,.jpg,.jpeg';
+    // No accept filter: the Windows picker hid photos and files without an extension, making folders look empty.
 
     const changeMode = (m) => {
         setMode(m);
@@ -47,7 +46,7 @@ const UploadForm = ({ onSubmit, busy }) => {
         <form onSubmit={submit} className="space-y-4">
             <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">1. Mode</p>
-                <p className="mb-2 text-xs text-gray-500">GeoTIFF (.tif) images. Ready-made demo files are in the repo's <code>samples</code> folder (see docs/DEMO.md).</p>
+                <p className="mb-2 text-xs text-gray-500">GeoTIFF (.tif) images, or JPG/PNG photos for captions and questions. Ready-made demo files are in the repo's <code>samples</code> folder (see docs/DEMO.md).</p>
                 <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Upload mode">
                     {Object.entries(MODES).map(([key, m]) => (
                         <button key={key} type="button" role="radio" aria-checked={mode === key}
@@ -67,7 +66,7 @@ const UploadForm = ({ onSubmit, busy }) => {
                     <div key={`${mode}-${f.slot}`} className="rounded-xl border border-space-700/70 bg-space-900/40 p-3 space-y-2">
                         <label className="block text-sm font-medium text-gray-200">
                             {f.label} <span className="text-xs font-normal text-gray-500">({f.hint})</span>
-                            <input type="file" accept={accept}
+                            <input type="file"
                                 onChange={(e) => setFiles({ ...files, [f.slot]: e.target.files[0] })}
                                 className="mt-1 block w-full text-xs text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-space-700 file:px-3 file:py-1.5 file:text-white hover:file:bg-accent-blue" />
                         </label>

@@ -14,6 +14,7 @@ SLOT_KINDS = {"single": [None], "optical_sar": ["optical", "sar"], "bi_temporal"
 GEOTIFF_EXTS = {".tif", ".tiff"}
 IMAGE_EXTS = {".png", ".jpg", ".jpeg"}
 _PHOTO_DRIVER = {".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG"}
+_EXT_FOR_DRIVER = {"GTiff": ".tif", "PNG": ".png", "JPEG": ".jpg", "WEBP": ".jpg"}
 LOW_OVERLAP_WARNING = 0.5
 
 
@@ -104,6 +105,16 @@ def _check_dates(mode, dates, expected, today, reasons):
 def _check_file(slot, filename, path, sensor, expected_kind, benchmark_mode, reasons, warnings,
                 band_roles=None):
     ext = Path(filename or "").suffix.lower()
+    if not ext:
+        # No extension (easy to lose when renaming on Windows): identify the file by its content.
+        try:
+            driver = read_metadata(path)["driver"]
+        except RasterReadError as exc:
+            reasons.append(reason("unreadable_raster", f"File {slot} ({filename}) is {exc}.", slot))
+            return None
+        ext = _EXT_FOR_DRIVER.get(driver, "")
+        if ext:
+            warnings.append(f"File {slot} ({filename}) has no file extension; detected {driver} from its content.")
     if ext in IMAGE_EXTS and not benchmark_mode:
         reasons.append(reason("image_requires_benchmark_mode",
                               f"File {slot} ({filename}) is {ext.lstrip('.').upper()}; "

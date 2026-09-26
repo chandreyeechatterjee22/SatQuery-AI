@@ -1,7 +1,11 @@
 import React from 'react';
 import { FiCheckCircle, FiXCircle, FiAlertTriangle } from 'react-icons/fi';
 
-const fmtRes = (r) => (r ? `${Number(r.x.toPrecision(4))} x ${Number(r.y.toPrecision(4))} ${r.units}` : '-');
+const fmtRes = (r) => {
+    if (!r) return '-';
+    if (r.units === 'pixels') return 'pixel size unknown';  // no CRS (e.g. a JPG/PNG photo)
+    return `${Number(r.x.toPrecision(4))} x ${Number(r.y.toPrecision(4))} ${r.units}`;
+};
 
 const ValidationResult = ({ result }) => {
     if (!result) return null;
