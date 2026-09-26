@@ -155,6 +155,7 @@ class _Run:
                 "status": status,
                 "confidence": {"task": self.task_confidence, "tool": tool_confidence},
                 "steps": self.steps,
+                **({"source": self.ctx.manifest["source"]} if self.ctx.manifest.get("source") else {}),
             },
         }
         out = self.ctx.query_dir(self.query_id) / "result.json"

@@ -48,6 +48,17 @@ export const askQuestion = async (uploadId, question, params) => {
     return response.data;
 };
 
+export const fetchGeeStatus = async () => {
+    const response = await axios.get(`${API_BASE_URL}/gee/status`);
+    return response.data;
+};
+
+/** POST /gee/fetch -> accepted upload manifest (errors are thrown; use describeError). */
+export const geeFetch = async (mode, bbox, dateRanges) => {
+    const response = await axios.post(`${API_BASE_URL}/gee/fetch`, { mode, bbox, date_ranges: dateRanges });
+    return response.data;
+};
+
 export const fetchTools = async () => {
     const response = await axios.get(`${API_BASE_URL}/tools`);
     return response.data.tools;

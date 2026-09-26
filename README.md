@@ -14,6 +14,8 @@ A functional prototype for analyzing satellite imagery using Google Earth Engine
 | Fine-tuned component | 4-band (B/G/R/NIR) ResNet-18 fine-tuned on BigEarthNet v2 (`ml/landcover_patch`) |
 | Frontend | "Upload Analysis" tab: mode picker, validation, example chips, image viewer with overlay toggle, answer + confidence, trace, JSON/HTML report |
 | Batch CLI | `python -m app.predict --task vqa --input <folder or manifest.json> --out predictions.json` |
+| Fetch from Earth Engine | `POST /api/gee/fetch` / "Fetch from Earth Engine" panel: pick a district or draw a box (max 10 x 10 km) plus date range(s). Gets a Cloud Score+ masked Sentinel-2 L2A median (B2,B3,B4,B8,B11,B12) and, for Optical + SAR, a Sentinel-1 GRD IW median (VV/VH dB) on one shared UTM 10 m grid, then uploads them with band roles set. The source (collections, dates, bands, scale) is recorded in the trace and reports. Optional: without Earth Engine credentials the button is disabled and everything else works. |
+| Photo inputs | JPG/PNG/WebP (also without a file extension) work for captioning, VQA and metadata. Water/built-up and change analysis return `NOT_AVAILABLE` for them, with links to proper GeoTIFF sources. |
 
 **Model results (held-out test splits, CPU training on the machine above):**
 

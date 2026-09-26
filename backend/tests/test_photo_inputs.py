@@ -79,7 +79,7 @@ def test_photo_pair_is_not_available(tmp_path, upload_dir):
     sar = png(tmp_path / "sar.png", rng.integers(0, 255, (1, 16, 16), dtype=np.uint8))
     res = run_query(upload("optical_sar", [opt, sar]), "Map water and built-up areas")
     assert res["status"] == "NOT_AVAILABLE" and res["confidence"] is None
-    assert "does not contain calibrated backscatter" in res["answer"]
+    assert "The SAR image is a photo (JPG/PNG), not calibrated radar data" in res["answer"]
     assert "photo with only red/green/blue" in res["answer"]
     assert res["evidence_images"] == []
 
@@ -130,3 +130,16 @@ def test_vqa_count_on_photo_carries_scale_note(tmp_path, upload_dir, monkeypatch
     assert "no map scale" in res["details"]["warnings"][0]
     res = run_query(uid, "Is there a road?")
     assert res["details"]["warnings"] == []                        # only counts get the note
+
+
+def test_rgba_png_in_sar_slot_is_accepted_then_not_available(tmp_path, upload_dir):
+    opt = png(tmp_path / "optical 2", rng.integers(0, 255, (4, 16, 16), dtype=np.uint8))   # no extension, RGBA
+    sar = png(tmp_path / "sar 2", rng.integers(0, 255, (4, 16, 16), dtype=np.uint8))
+    meta = read_metadata(sar)
+    bands = resolve_bands(meta, expected_kind="sar")
+    assert bands["kind"] == "sar" and bands["roles"] == {"vv": 1}
+    res = run_query(upload("optical_sar", [opt, sar]), "Map water and built-up areas")
+    assert res["status"] == "NOT_AVAILABLE"
+    assert "The SAR image is a photo (JPG/PNG), not calibrated radar data" in res["answer"]
+    assert "photo with only red/green/blue" in res["answer"]
+    assert res["answer"].count("calibrated radar") == 1   # photo reason replaces the generic one

@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiCheckCircle, FiXCircle, FiAlertTriangle } from 'react-icons/fi';
+import GeoTiffSources from './GeoTiffSources';
 
 const fmtRes = (r) => {
     if (!r) return '-';
@@ -20,6 +21,7 @@ const ValidationResult = ({ result }) => {
                     ))}
                 </ul>
                 {result.body?.warnings?.length > 0 && <Warnings items={result.body.warnings} />}
+                <GeoTiffSources />
             </div>
         );
     }
@@ -45,6 +47,11 @@ const ValidationResult = ({ result }) => {
                     </li>
                 ))}
             </ul>
+            {m.source && (
+                <p className="mt-2 text-xs text-gray-400" data-testid="upload-source">
+                    Source: {m.source.provider} · {m.source.products.map((p) => `${p.product} ${p.date_range.join(' to ')} (${p.scenes} scenes)`).join(' · ')} · {m.source.crs}, {m.source.scale_m} m
+                </p>
+            )}
             {m.pair?.overlap_fraction != null && (
                 <p className="mt-2 text-xs text-gray-400">Overlap: {Math.round(m.pair.overlap_fraction * 100)}% of the smaller image</p>
             )}
