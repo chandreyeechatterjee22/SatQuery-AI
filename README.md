@@ -115,6 +115,19 @@ $body = @{ upload_id = "<id from /api/uploads>"; question = "How many bands does
 Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/query -ContentType "application/json" -Body $body
 ```
 
+## Batch predictions (CLI)
+
+The same agent as `POST /api/query`, without the server. Run from `backend/`:
+
+```powershell
+python -m app.predict --task vqa --input manifest.json --out predictions.json
+python -m app.predict --task caption --input C:\images --out predictions.json
+```
+
+- **`--input`** is a folder of GeoTIFFs (used together with `--question`) or a manifest JSON list, e.g. `{"id", "image" | "images", "question", "mode", "dates", "band_roles"}`.
+- **Each prediction** has `status`, a short canonical `answer` (`yes`/`no`, a number, `urban`, `increased`, ...; `null` unless status is `OK`), `confidence`, tool + version and `answered_by`.
+- **Measured here:** 40 RSVQA-LR test questions in 28 s on the i3 CPU.
+
 ## Optical + SAR water / built-up
 
 `optical_sar_mapper` warps the SAR image onto the optical grid (downsampled to at most `max_size` px) and uses only pixels valid in both.
