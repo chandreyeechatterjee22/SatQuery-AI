@@ -6,7 +6,11 @@ model files.
 
 ## 1. Start (Windows PowerShell)
 
-One-time setup, from the repo root:
+One-time setup, from the repo root.
+
+> **Windows path length:** clone into a short path such as `C:\dev\SatQuery-AI`. torch has deeply
+> nested files, and if Windows long paths are disabled (the default), `pip install torch` fails
+> inside deep folders with `OSError: [Errno 2] No such file or directory ... torch\include\...`.
 
 ```powershell
 python -m venv .venv
