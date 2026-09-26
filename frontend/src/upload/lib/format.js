@@ -61,12 +61,22 @@ const CONFIDENCE_BASIS = {
 };
 
 /** Missing inputs that block the upload button, as user-facing sentences. */
-export function uploadProblems(mode, files, dates) {
+const IMAGE_EXT = /\.(png|jpe?g)$/i;
+const GEOTIFF_EXT = /\.tiff?$/i;
+
+export function uploadProblems(mode, files, dates, benchmark = false) {
     const spec = MODES[mode];
     if (!spec) return ['Choose a mode.'];
     const problems = [];
     for (const f of spec.files) {
-        if (!files[f.slot]) problems.push(`Add the ${f.label.toLowerCase()}.`);
+        const file = files[f.slot];
+        if (!file) problems.push(`Add the ${f.label.toLowerCase()}.`);
+        else if (!file.name) continue;
+        else if (IMAGE_EXT.test(file.name) && !benchmark) {
+            problems.push(`${file.name} is a PNG/JPEG. Upload a GeoTIFF (.tif), or turn on Benchmark mode under Advanced.`);
+        } else if (!GEOTIFF_EXT.test(file.name) && !IMAGE_EXT.test(file.name)) {
+            problems.push(`${file.name} is not a supported image. Use a GeoTIFF (.tif/.tiff).`);
+        }
     }
     if (spec.needsDates) {
         if (!dates[1] || !dates[2]) problems.push('Enter both acquisition dates.');
