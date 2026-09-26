@@ -1,0 +1,16 @@
+[
+  {"id": "1_rural_urban", "image": "rsvqa_lr_232.tif", "question": "Is it a rural or an urban area?"},
+  {"id": "1b_caption", "image": "rsvqa_lr_232.tif", "question": "Describe this image"},
+  {"id": "2_metadata", "image": "bellandur_s2_2024q1.tif", "band_roles": ["blue,green,red,nir,swir1"],
+   "question": "How many bands does this image have and what is the resolution?"},
+  {"id": "3_optical_sar", "mode": "optical_sar", "images": ["bellandur_s2_2024q1.tif", "bellandur_s1_2024q1.tif"],
+   "band_roles": ["blue,green,red,nir,swir1", "vv,vh"], "question": "Map water and built-up areas"},
+  {"id": "4_change_same_season", "mode": "bi_temporal", "images": ["sarjapur_s2_2021q1.tif", "sarjapur_s2_2025q1.tif"],
+   "dates": ["2021-02-15", "2025-02-15"], "band_roles": ["blue,green,red,nir,swir1,swir2", "blue,green,red,nir,swir1,swir2"],
+   "question": "Has built-up area increased, decreased or remained unchanged?"},
+  {"id": "5_change_dry_year", "mode": "bi_temporal", "images": ["sarjapur_s2_2019q1.tif", "sarjapur_s2_2025q1.tif"],
+   "dates": ["2019-02-15", "2025-02-15"], "band_roles": ["blue,green,red,nir,swir1,swir2", "blue,green,red,nir,swir1,swir2"],
+   "question": "Has built-up area increased, decreased or remained unchanged?"},
+  {"id": "6_rejected_no_overlap", "mode": "optical_sar", "images": ["sarjapur_s2_2021q1.tif", "bellandur_s1_2024q1.tif"],
+   "band_roles": ["blue,green,red,nir,swir1,swir2", "vv,vh"], "question": "Where is the water?"}
+]

@@ -2,6 +2,31 @@
 
 A functional prototype for analyzing satellite imagery using Google Earth Engine, FastAPI, and React.
 
+**v1.0-prototype** adds an upload-based agentic flow next to the original Earth Engine map flow. The map flow itself is unchanged. **Demo guide: [docs/DEMO.md](docs/DEMO.md)** (5 scenarios using `samples/`).
+
+| Feature | What it does |
+|---|---|
+| Upload + validation | `POST /api/uploads`: 1-2 GeoTIFFs in `single` / `optical_sar` / `bi_temporal` mode. Reads bands, CRS, bounds and resolution with rasterio. Rejects wrong file counts, CRS mismatches, non-overlapping pairs and bad dates with clear reasons. Works with any band count, and band roles can be given explicitly. |
+| Agent controller + trace | `POST /api/query`: rule-based task classifier with a fuzzy fallback, a mode check, a tool registry and a parameter allow-list. Returns answer, confidence, evidence images and an execution trace, with no chain-of-thought. |
+| Captioning + VQA | RemoteCLIP ViT-B/32 (Apache-2.0) on the CPU. Captions are zero-shot. VQA uses a trained RSVQA-LR head, falling back to zero-shot. Answers are short canonical strings. |
+| Optical + SAR | Water and built-up from optical indices and SAR backscatter, with per-class overlays coloured *optical + SAR agree / optical only / SAR only*, area % and km². |
+| Change analysis | Land cover per date, per-class deltas, answer text built from the numbers, and a season-consistency check. Built-up direction comes from the fine-tuned land-cover model. |
+| Fine-tuned component | 4-band (B/G/R/NIR) ResNet-18 fine-tuned on BigEarthNet v2 (`ml/landcover_patch`) |
+| Frontend | "Upload Analysis" tab: mode picker, validation, example chips, image viewer with overlay toggle, answer + confidence, trace, JSON/HTML report |
+| Batch CLI | `python -m app.predict --task vqa --input <folder or manifest.json> --out predictions.json` |
+
+**Model results (held-out test splits, CPU training on the machine above):**
+
+| Model | Metric | Before | After |
+|---|---|---|---|
+| Land-cover ResNet-18, BigEarthNet v2 test subset (5,378 patches) | micro mAP / macro mAP / macro F1 | 0.690 / 0.506 / 0.410 (linear probe) | **0.806 / 0.664 / 0.598** (fine-tuned) |
+| RSVQA-LR VQA head, test (10,004 questions) | overall / average accuracy | 17.0% / 30.6% (zero-shot RemoteCLIP); 57.0% / 55.8% (majority answer) | **69.5% / 71.8%** (trained head) |
+
+**Known limits:**
+- Exact counting in RSVQA-LR stays weak (26.8%; 65.8% when counts are binned).
+- The land-cover model did not improve per-pixel built-up maps against WorldCover in Bengaluru (Europe -> India domain shift). It is used only for the scene-level built-up direction.
+- Index rules mistake dry bare fields for built-up; the season check flags this.
+
 ## How the system works
 
 **User**
