@@ -7,6 +7,7 @@ import {
     uploadProblems,
 } from './format.js';
 import { buildReportHtml, buildReportJson, escapeHtml, reportFilename } from './report.js';
+import { districtGroups } from './locations.js';
 
 const upload = {
     upload_id: 'abc123def456',
@@ -187,4 +188,21 @@ test('reports carry the Earth Engine source', () => {
     assert.ok(html.includes('Source: Google Earth Engine'));
     assert.ok(html.includes('COPERNICUS/S2_SR_HARMONIZED 2024-01-01 to 2024-03-31 (5 scenes, bands B2,B3)'));
     assert.equal(buildReportJson(upload, result).upload.source, null);
+});
+
+test('district dropdown: major cities first, then all districts alphabetically', () => {
+    const areas = ['Kolkata', 'Darjeeling', 'Howrah', 'Bankura'];
+    const majors = [{ label: 'Kolkata', district: 'Kolkata' }, { label: 'Siliguri area (Darjeeling)', district: 'Darjeeling' },
+        { label: 'Stale entry', district: 'Nowhere' }];
+    const g = districtGroups(areas, majors);
+    assert.deepEqual(g.major, [{ label: 'Kolkata', value: 'Kolkata' }, { label: 'Siliguri area (Darjeeling)', value: 'Darjeeling' }]);
+    assert.deepEqual(g.all.map((o) => o.value), ['Bankura', 'Darjeeling', 'Howrah', 'Kolkata']);
+});
+
+test('district dropdown follows the chosen state', () => {
+    const wb = districtGroups(['Kolkata', 'Howrah'], [{ label: 'Kolkata', district: 'Kolkata' }]);
+    const ladakh = districtGroups(['Leh', 'Kargil'], [{ label: 'Leh', district: 'Leh' }]);
+    assert.deepEqual(ladakh.all.map((o) => o.value), ['Kargil', 'Leh']);
+    assert.ok(!wb.all.some((o) => ladakh.all.some((p) => p.value === o.value)));
+    assert.deepEqual(districtGroups([], null), { major: [], all: [] });   // no state picked yet
 });

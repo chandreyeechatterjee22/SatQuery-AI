@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiChevronDown, FiMapPin } from 'react-icons/fi';
+import DistrictSelect from './DistrictSelect';
 
 const SUGGESTED_QUERIES = [
     { icon: '🌿', label: 'Where is the vegetation?', sub: 'NDVI' },
@@ -14,6 +15,7 @@ const Sidebar = ({
     selectedState,
     onStateChange,
     areas,
+    majorCities,
     selectedArea,
     onAreaChange,
     onExploreArea,
@@ -38,10 +40,10 @@ const Sidebar = ({
                 </div>
 
                 <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">State</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">State / UT</label>
                     <div className="relative">
-                        <select value={selectedState} onChange={onStateChange} className={selectClasses}>
-                            <option value="">Select state</option>
+                        <select value={selectedState} onChange={onStateChange} className={selectClasses} aria-label="State / UT">
+                            <option value="">Select state / UT</option>
                             {states.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                         <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -49,12 +51,10 @@ const Sidebar = ({
                 </div>
 
                 <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Area / District</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">District / City</label>
                     <div className="relative">
-                        <select value={selectedArea} onChange={onAreaChange} disabled={!selectedState} className={selectClasses}>
-                            <option value="">Select area</option>
-                            {areas.map(a => <option key={a} value={a}>{a}</option>)}
-                        </select>
+                        <DistrictSelect value={selectedArea} onChange={onAreaChange} areas={areas} majorCities={majorCities}
+                            disabled={!selectedState} className={selectClasses} aria-label="District / City" />
                         <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
                     </div>
                 </div>
