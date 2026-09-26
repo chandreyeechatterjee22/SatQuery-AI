@@ -7,7 +7,7 @@ import rasterio
 from rasterio.errors import NotGeoreferencedWarning, RasterioIOError
 
 GEOTIFF_DRIVER = "GTiff"
-IMAGE_DRIVERS = {"PNG", "JPEG"}
+IMAGE_DRIVERS = {"PNG", "JPEG", "WEBP"}  # photos (benchmark mode); WebP often hides behind .jpg
 
 
 class RasterReadError(ValueError):

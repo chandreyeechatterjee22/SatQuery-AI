@@ -283,3 +283,18 @@ def test_bad_band_roles_rejected(tmp_path):
 def test_optical_slot_with_sar_band_roles(tmp_path):
     res = run("optical_sar", [optical(tmp_path, count=2), sar(tmp_path)], band_roles=["vv,vh", None])
     assert codes(res) == ["wrong_modality"]
+
+
+def test_webp_named_jpg_is_accepted_as_photo_with_warning(tmp_path):
+    import numpy as np
+    import rasterio
+
+    path = tmp_path / "download.jpg"
+    with rasterio.open(path, "w", driver="WEBP", width=16, height=16, count=3, dtype="uint8") as dst:
+        dst.write(np.full((3, 16, 16), 120, dtype="uint8"))
+    res = run("single", [("download.jpg", path)], benchmark_mode=True)
+    assert res["ok"], res["reasons"]
+    assert res["files"][0]["metadata"]["driver"] == "WEBP"
+    assert any("is actually WEBP; read as a photo" in w for w in res["warnings"])
+    # Without benchmark (photo) mode it is still rejected with a clear reason.
+    assert codes(run("single", [("download.jpg", path)])) == ["image_requires_benchmark_mode"]
