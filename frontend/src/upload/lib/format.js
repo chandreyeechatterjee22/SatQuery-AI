@@ -137,3 +137,54 @@ export function splitEvidence(uploadId, files, result) {
     }
     return { bases: [...bases.values()], overlays };
 }
+
+// --- Earth Engine fetch helpers -------------------------------------------------------------
+
+const KM_PER_DEG = 111.32;
+
+/** [west, south, east, north] box of ``sizeKm`` x ``sizeKm`` centred on lat/lon. */
+export function bboxAround(lat, lon, sizeKm) {
+    const dLat = sizeKm / 2 / KM_PER_DEG;
+    const dLon = sizeKm / 2 / (KM_PER_DEG * Math.cos((lat * Math.PI) / 180));
+    const r = (v) => Math.round(v * 1e6) / 1e6;
+    return [r(lon - dLon), r(lat - dLat), r(lon + dLon), r(lat + dLat)];
+}
+
+/** Width and height of a [west, south, east, north] box in km. */
+export function bboxSizeKm([west, south, east, north]) {
+    const midLat = (((south + north) / 2) * Math.PI) / 180;
+    return { width: (east - west) * KM_PER_DEG * Math.cos(midLat), height: (north - south) * KM_PER_DEG };
+}
+
+/** Problems with an area / date ranges before calling POST /api/gee/fetch. */
+export function geeFetchProblems(mode, bbox, ranges, maxKm = 10) {
+    const problems = [];
+    if (!bbox) problems.push('Choose an area (district or rectangle).');
+    else {
+        const { width, height } = bboxSizeKm(bbox);
+        if (width > maxKm + 0.05 || height > maxKm + 0.05) {
+            problems.push(`The area is ${width.toFixed(1)} x ${height.toFixed(1)} km; the maximum is ${maxKm} x ${maxKm} km.`);
+        }
+    }
+    const needed = mode === 'bi_temporal' ? 2 : 1;
+    for (let i = 0; i < needed; i += 1) {
+        const [start, end] = ranges[i] || [];
+        if (!start || !end) problems.push(`Enter date range ${needed > 1 ? i + 1 : ''}`.trim() + '.');
+        else if (start >= end) problems.push(`Date range ${needed > 1 ? `${i + 1} ` : ''}must start before it ends.`);
+    }
+    return problems;
+}
+
+/** Where to get analysable GeoTIFFs (shown wherever a photo can't be analysed). */
+export const GEOTIFF_SOURCES = [
+    { label: "Use 'Fetch from Earth Engine' below (easiest)", href: null },
+    { label: 'Copernicus Browser: Sentinel-2 L2A / Sentinel-1 GRD as GeoTIFF', href: 'https://browser.dataspace.copernicus.eu/' },
+    { label: 'ASF Vertex: Sentinel-1 RTC GeoTIFF (calibrated SAR)', href: 'https://search.asf.alaska.edu/' },
+    { label: 'ISRO Bhoonidhi: Cartosat / RISAT', href: 'https://bhoonidhi.nrsc.gov.in/' },
+    { label: 'Or try the demo files in samples/', href: null },
+];
+
+/** Answers that say an input (photo / uncalibrated radar) can't be analysed. */
+export function needsGeoTiffHint(text) {
+    return /photo|GeoTIFF|calibrated|multispectral|near-infrared|PNG|JPEG/i.test(text || '');
+}
