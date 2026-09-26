@@ -31,7 +31,7 @@ Everything is written under `data/`, which git ignores.
 The head is saved to `data/models/vqa_head/rsvqa_lr_head.pt`, which is the backend's
 default `VQA_HEAD_PATH`. Once that file exists, `rs_vqa` uses it automatically.
 
-Tests (synthetic data, no downloads): `cd ml; ..\.venv\Scripts\python.exe -m pytest`
+Tests (synthetic data, no downloads): `cd ml\vqa_head; ..\..\.venv\Scripts\python.exe -m pytest`
 
 ## Notes
 

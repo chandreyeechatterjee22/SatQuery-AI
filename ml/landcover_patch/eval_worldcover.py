@@ -13,6 +13,7 @@ running: wire the model in only if HOLDOUT mean built-up F1 improves by >= MIN_G
 HOLDOUT area gets worse. BigEarthNet is European and these areas are in India, so this is
 also a domain-shift test.
 """
+import argparse
 import json
 import sys
 
@@ -109,8 +110,11 @@ def season_case(clf, tau):
     return out
 
 
-def main():
-    cfg = common.load_config()
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Rules vs rules + model against ESA WorldCover.")
+    parser.add_argument("--config", default=None)
+    args = parser.parse_args(argv)
+    cfg = common.load_config(args.config)
     clf = PatchClassifier.load(cfg["checkpoint"])
     report = {"reference": "ESA WorldCover 2021", "min_gain": MIN_GAIN, "tune": TUNE, "holdout": HOLDOUT,
               "model": clf.trace_info,
