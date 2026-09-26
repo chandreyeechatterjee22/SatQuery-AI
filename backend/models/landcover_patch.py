@@ -180,6 +180,17 @@ class PatchClassifier:
                 out.append(torch.sigmoid(self.net(torch.from_numpy(x[i:i + batch_size]))).numpy())
         return np.concatenate(out) if out else np.zeros((0, len(self.class_names)), dtype="float32")
 
+    def scene_score(self, image, classes=BUILT_CLASSES, stride=PATCH // 2):
+        """Scene-level score: mean over windows of max P(class in ``classes``). Returns (score, windows)."""
+        _, h, w = image.shape
+        padded = image
+        if h < PATCH or w < PATCH:
+            padded = np.pad(image, ((0, 0), (0, max(0, PATCH - h)), (0, max(0, PATCH - w))), mode="reflect")
+        corners = windows(*padded.shape[1:], stride=stride)
+        probs = self.predict_patches(np.stack([padded[:, r:r + PATCH, c:c + PATCH] for r, c in corners]))
+        idx = [self.class_names.index(c) for c in classes]
+        return float(probs[:, idx].max(axis=1).mean()), len(corners)
+
     def score_map(self, image, classes=BUILT_CLASSES, stride=PATCH // 2):
         """Per-pixel score: max over the covering windows of max P(class in ``classes``).
 
