@@ -14,6 +14,7 @@ from analysis.flood import analyze_flood
 from ingest.router import router as uploads_router
 from agent.router import router as agent_router
 from ingest.gee_router import router as gee_router
+import locations
 
 app = FastAPI(title="SatQuery AI API")
 app.include_router(uploads_router)
@@ -47,45 +48,25 @@ class AnalyzeRequest(BaseModel):
     geometry: Dict[str, Any]
     query: str
 
-# Sample Location Data (India) - centroid + zoom level used to fly the map to the selected district
-LOCATIONS = {
-    "Karnataka": {
-        "Bengaluru Urban": {"lat": 12.9716, "lon": 77.5946, "zoom": 11},
-        "Bengaluru Rural": {"lat": 13.2846, "lon": 77.5946, "zoom": 10},
-        "Mysuru": {"lat": 12.2958, "lon": 76.6394, "zoom": 11},
-        "Mandya": {"lat": 12.5242, "lon": 76.8958, "zoom": 10},
-        "Tumakuru": {"lat": 13.3379, "lon": 77.1173, "zoom": 10},
-        "Mangaluru": {"lat": 12.9141, "lon": 74.8560, "zoom": 11},
-        "Shivamogga": {"lat": 13.9299, "lon": 75.5681, "zoom": 10},
-    },
-    "Maharashtra": {
-        "Mumbai": {"lat": 19.0760, "lon": 72.8777, "zoom": 11},
-        "Pune": {"lat": 18.5204, "lon": 73.8567, "zoom": 11},
-        "Nagpur": {"lat": 21.1458, "lon": 79.0882, "zoom": 11},
-        "Nashik": {"lat": 19.9975, "lon": 73.7898, "zoom": 11},
-    },
-    "Tamil Nadu": {
-        "Chennai": {"lat": 13.0827, "lon": 80.2707, "zoom": 11},
-        "Coimbatore": {"lat": 11.0168, "lon": 76.9558, "zoom": 11},
-        "Madurai": {"lat": 9.9252, "lon": 78.1198, "zoom": 11},
-    },
-}
-
+# States / UTs and districts of India (generated file, see scripts/build_india_locations.py)
 @app.get("/api/states")
 def get_states():
-    return {"states": list(LOCATIONS.keys())}
+    return {"states": locations.state_names()}
 
 @app.get("/api/areas/{state}")
 def get_areas(state: str):
-    if state not in LOCATIONS:
+    areas = locations.district_names(state)
+    if areas is None:
         raise HTTPException(status_code=404, detail="State not found")
-    return {"areas": list(LOCATIONS[state].keys())}
+    return {"areas": areas, "major_cities": locations.major_cities(state)}
 
 @app.get("/api/location/{state}/{area}")
 def get_location(state: str, area: str):
-    if state not in LOCATIONS or area not in LOCATIONS[state]:
+    loc = locations.resolve(state, area)
+    if loc is None:
         raise HTTPException(status_code=404, detail="Location not found")
-    return LOCATIONS[state][area]
+    # Same shape as before: centroid + zoom used to fly the map to the district.
+    return {"lat": loc["lat"], "lon": loc["lon"], "zoom": loc["zoom"]}
 
 def dict_to_ee_geometry(geom_dict: Dict[str, Any]) -> ee.Geometry:
     """Converts a GeoJSON dictionary to an Earth Engine Geometry."""
