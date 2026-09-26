@@ -196,6 +196,22 @@ All thresholds are validated parameters (see `GET /api/tools`).
 
 Optional. Without these steps, captioning and VQA return `NOT_AVAILABLE` and everything else works.
 
+**Run this once after cloning** (after installing the ML packages below):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\download_models.ps1     # or: bash scripts/download_models.sh
+```
+
+It downloads the model files into `data/models/` (git-ignored) and checks each one against `scripts/models.sha256`:
+
+| File | Source | Size |
+|---|---|---|
+| `vqa_head/rsvqa_lr_head.pt` | GitHub release `v1.0-prototype` asset | 6.8 MB |
+| `landcover_patch/resnet18_4band_ben.pt` | GitHub release `v1.0-prototype` asset | 44.8 MB |
+| `remoteclip/RemoteCLIP-ViT-B-32.pt` | Hugging Face `chendelong/RemoteCLIP` (Apache-2.0), fetched by `backend/scripts/download_remoteclip.py` | 605 MB |
+
+Set `SATQUERY_MODELS_URL` to download the two trained files from a mirror. You can also retrain them with `ml/vqa_head` and `ml/landcover_patch`.
+
 ```powershell
 cd backend
 pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu
