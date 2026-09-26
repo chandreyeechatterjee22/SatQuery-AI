@@ -16,9 +16,9 @@ const QuestionBox = ({ mode, disabled, busy, onAsk }) => {
                     onChange={(e) => setQuestion(e.target.value)}
                     placeholder={disabled ? 'Upload an image first' : 'Ask a question about the upload...'}
                     aria-label="Question"
-                    className="flex-1 rounded-xl border border-space-700 bg-space-900/70 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-accent-cyan focus:outline-none disabled:opacity-50" />
+                    className="flex-1 rounded-full border border-white/10 bg-space-900 px-5 py-2.5 text-sm text-white placeholder-gray-500 focus:border-accent-cyan focus:outline-none disabled:opacity-50" />
                 <button type="submit" disabled={disabled || busy || !question.trim()}
-                    className="flex items-center gap-2 rounded-xl bg-accent-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-cyan disabled:cursor-not-allowed disabled:opacity-40">
+                    className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-soft-stone disabled:cursor-not-allowed disabled:opacity-40">
                     <FiSend /> {busy ? 'Running...' : 'Ask'}
                 </button>
             </div>

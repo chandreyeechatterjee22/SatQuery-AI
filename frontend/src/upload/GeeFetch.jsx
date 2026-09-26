@@ -105,7 +105,7 @@ const GeeFetch = ({ onFetched, disabled }) => {
 
     const notConfigured = status && !status.configured;
     return (
-        <div className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
+        <div className="rounded-lg border border-white/[0.07] bg-space-800 p-5">
             <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 text-left">
                 {open ? <FiChevronDown /> : <FiChevronRight />}
                 <FiCloud className="text-accent-cyan" />
@@ -156,14 +156,14 @@ const GeeFetch = ({ onFetched, disabled }) => {
                             {expanded && <div className="fixed inset-0 z-[2999] bg-black/60" onClick={() => setExpanded(false)} />}
                             <div data-testid="gee-mini-map"
                                 className={expanded
-                                    ? 'fixed inset-4 sm:inset-10 z-[3000] flex flex-col gap-2 rounded-2xl border border-space-700 bg-space-900 p-3 shadow-2xl'
+                                    ? 'fixed inset-4 sm:inset-10 z-[3000] flex flex-col gap-2 rounded-lg border border-white/10 bg-space-900 p-3'
                                     : 'flex flex-col gap-2'}>
                                 {expanded && (
                                     <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-gray-200">
                                         <span>Draw a rectangle (square tool), or resize/move it with the edit tool (pencil) and click Save.</span>
                                         <span className="text-gray-400">{size ? `Area: ${size.width.toFixed(1)} x ${size.height.toFixed(1)} km (max ${maxKm} x ${maxKm})` : 'No area yet'}</span>
                                         <button type="button" onClick={() => setExpanded(false)}
-                                            className="rounded-lg bg-accent-blue px-4 py-1.5 font-semibold text-white hover:bg-accent-cyan">Done</button>
+                                            className="rounded-full bg-white px-4 py-1.5 font-medium text-primary hover:bg-soft-stone">Done</button>
                                     </div>
                                 )}
                                 <div className={`${expanded ? 'flex-1' : 'h-72'} overflow-hidden rounded-lg border border-space-700`}>
@@ -211,7 +211,7 @@ const GeeFetch = ({ onFetched, disabled }) => {
                         </p>
                     )}
                     <button type="button" onClick={submit} disabled={!status || notConfigured || disabled || busy || problems.length > 0}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-blue to-accent-cyan px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-medium text-primary transition-colors hover:bg-soft-stone disabled:cursor-not-allowed disabled:opacity-40">
                         <FiCloud /> {busy ? 'Fetching from Earth Engine (30-120 s)...' : 'Fetch from Earth Engine'}
                     </button>
                     {error && <p role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-red-200">{error}</p>}
