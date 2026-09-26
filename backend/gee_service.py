@@ -4,19 +4,26 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+DEFAULT_GEE_PROJECT_ID = 'satquery-ai-508105'
+
+def get_gee_project_id():
+    """GEE project id from env GEE_PROJECT_ID, falling back to the original default."""
+    return os.getenv("GEE_PROJECT_ID") or DEFAULT_GEE_PROJECT_ID
+
 def initialize_gee():
     """Initializes Google Earth Engine."""
     try:
         # If using a service account (recommended for production backend)
         service_account = os.getenv("GEE_SERVICE_ACCOUNT")
         private_key = os.getenv("GEE_PRIVATE_KEY")
-        
+        project_id = get_gee_project_id()
+
         if service_account and private_key:
             credentials = ee.ServiceAccountCredentials(service_account, private_key)
-            ee.Initialize(credentials, project='satquery-ai-508105')
+            ee.Initialize(credentials, project=project_id)
         else:
             # Fallback to local authentication for development
-            ee.Initialize(project='satquery-ai-508105')
+            ee.Initialize(project=project_id)
         print("Earth Engine initialized successfully.")
     except Exception as e:
         print(f"Failed to initialize Earth Engine: {e}")
