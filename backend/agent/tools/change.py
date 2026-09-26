@@ -13,10 +13,15 @@ from agent.tools.question_classes import classes_in
 from local_analysis import landcover_change as lc
 from local_analysis.landcover_change import CLASS_CODES, CLASS_LABELS, CLASSES, DEFAULTS
 from local_analysis.overlays import render_overlay
+from models import landcover_patch as lp
 
 COLOURS = {"water": "#1f6feb", "built_up": "#d73a49", "vegetation": "#2da44e", "other": "#bf8700"}
 MAP_ALPHA = 170
 VERB = {lc.INCREASED: "increased", lc.DECREASED: "decreased", lc.UNCHANGED: "remained essentially unchanged"}
+# Built-up direction comes from the fine-tuned land-cover model's scene-level P(urban) when available
+# (pixel rules confuse dry bare fields with built-up). A change below this is "unchanged".
+URBAN_UNCHANGED_TOLERANCE = 0.05
+DISAGREEMENT_PENALTY = 0.5  # confidence multiplier when model and pixel rules disagree
 
 
 class ChangeTool(Tool):
@@ -34,6 +39,7 @@ class ChangeTool(Tool):
         "unchanged_tolerance_pp": {"type": "float", "min": 0, "max": 20,
                                    "default": DEFAULTS["unchanged_tolerance_pp"]},
         "max_size": {"type": "int", "min": 128, "max": 2048, "default": DEFAULTS["max_size"]},
+        "urban_unchanged_tolerance": {"type": "float", "min": 0, "max": 0.5, "default": URBAN_UNCHANGED_TOLERANCE},
     }
 
     def extract_params(self, question, ctx):
@@ -50,7 +56,7 @@ class ChangeTool(Tool):
             result = lc.analyse_change(
                 {"path": ctx.path(before["slot"]), "bands": before["bands"], "date": before.get("date")},
                 {"path": ctx.path(after["slot"]), "bands": after["bands"], "date": after.get("date")},
-                params={k: v for k, v in params.items() if k != "classes"})
+                params={k: v for k, v in params.items() if k not in ("classes", "urban_unchanged_tolerance")})
         except lc.MissingBands as exc:
             raise ToolNotAvailable(f"Land-cover change needs multispectral images: {exc}") from exc
 
@@ -72,14 +78,35 @@ class ChangeTool(Tool):
         }
         if len(focus) == 1:
             details["short_answer"] = result["classes"][focus[0]]["direction"]
+        answer = answer_text(result, focus)
+        model_trace = None
+        if "built_up" in focus:
+            md = model_direction(ctx, before, after, params["urban_unchanged_tolerance"])
+            model_trace = md["trace"]
+            if md["direction"]:
+                rules = result["classes"]["built_up"]
+                agree = md["direction"] == rules["direction"]
+                details["built_up_direction"] = {"source": "landcover_model", "model": md["trace"],
+                                                 "rules_direction": rules["direction"], "agree": agree}
+                if focus == ["built_up"]:
+                    details["short_answer"] = md["direction"]
+                lead = model_line(md, result["dates"])
+                if agree:
+                    lead += " The pixel rules agree."
+                else:
+                    lead += (f" Disagreement: the pixel rules say built-up {VERB[rules['direction']]} "
+                             f"({rules['delta_pp']:+.2f} percentage points, area table below); confidence lowered.")
+                    confidence *= DISAGREEMENT_PENALTY
+                answer = f"{lead}\n{answer}"
         return ToolResult(
-            answer=answer_text(result, focus),
+            answer=answer,
             confidence=confidence,
             evidence_images=evidence,
             data=details,
             trace={"methods": {k: result["methods"][k] for k in ("water_index", "built_up_index")},
                    "grid": list(result["grid"].shape), "order": [before["slot"], after["slot"]],
-                   "warnings": len(result["warnings"])},
+                   "warnings": len(result["warnings"]),
+                   **({"landcover_model": model_trace} if model_trace else {})},
         )
 
     def _map(self, ctx, query_id, out_dir, role, f, result):
@@ -90,6 +117,37 @@ class ChangeTool(Tool):
         return {"id": f"landcover_{role}", "kind": "overlay", "base": f"preview_{f['slot']}",
                 "label": f"Land cover {role} ({f.get('date')})", "url": ctx.evidence_url(query_id, name),
                 "legend": [{"label": CLASS_LABELS[c], "color": COLOURS[c]} for c in CLASSES]}
+
+
+def model_direction(ctx, before, after, tolerance):
+    """Built-up direction from the scene-level P(urban) delta, or direction=None with the reason."""
+    ok, reason = lp.availability()
+    if not ok:
+        return {"direction": None, "trace": {"used": False, "reason": reason}}
+    try:
+        model = lp.get_model()
+        scores = {}
+        for role, f in (("before", before), ("after", after)):
+            image, info = lp.prepare_input(ctx.path(f["slot"]), f["metadata"], f["bands"])
+            score, n = model.scene_score(image)
+            scores[role] = {"p_urban": round(score, 4), "windows": n, "in_distribution": info["in_distribution"],
+                            "source_resolution_m": info["source_resolution_m"]}
+    except lp.MissingBands as exc:
+        return {"direction": None, "trace": {"used": False, "reason": str(exc)}}
+    delta = round(scores["after"]["p_urban"] - scores["before"]["p_urban"], 4)
+    return {"direction": lc.direction(delta, tolerance), "delta": delta, "tolerance": tolerance, "scores": scores,
+            "trace": {"used": True, **model.trace_info, "p_urban": scores, "delta": delta, "tolerance": tolerance}}
+
+
+def model_line(md, dates):
+    t = md["trace"]
+    b, a = md["scores"]["before"]["p_urban"], md["scores"]["after"]["p_urban"]
+    line = (f"Built-up {VERB[md['direction']]} according to the land-cover model ({t['model']} {t['version']}, "
+            f"bands {'/'.join(t['bands'])}): scene P(urban) {b:.2f} on {dates['before']} -> {a:.2f} on "
+            f"{dates['after']} ({md['delta']:+.2f}; unchanged within ±{md['tolerance']:g}).")
+    if not all(s["in_distribution"] for s in md["scores"].values()):
+        line += " Input is not Sentinel-2-like reflectance, so the model is out of its training distribution."
+    return line
 
 
 def _ordered(ctx):

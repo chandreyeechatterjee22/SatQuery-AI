@@ -263,3 +263,72 @@ def test_season_note_in_answer(make_upload):
     assert "Note: The dates differ in overall greenness" in res["answer"]
     assert res["confidence"] == 0.0
     assert res["details"]["confidence_per_class"]["built_up"] == 0.0
+
+
+# --- built-up direction from the land-cover model ---------------------------------------
+
+class _FakeModel:
+    trace_info = {"model": "resnet18-4band-bigearthnet", "version": "1.0.0",
+                  "bands": ["blue", "green", "red", "nir"], "trained_on": "test"}
+
+    def __init__(self, scores):
+        self.scores = list(scores)
+
+    def scene_score(self, image):
+        return self.scores.pop(0), 1
+
+
+@pytest.fixture
+def fake_model(monkeypatch):
+    from models import landcover_patch as lp
+
+    def install(before, after):
+        model = _FakeModel([before, after])
+        monkeypatch.setattr(lp, "availability", lambda: (True, None))
+        monkeypatch.setattr(lp, "get_model", lambda: model)
+    return install
+
+
+def test_model_agrees_with_rules(pair, fake_model):
+    fake_model(0.40, 0.70)
+    res = run_query(pair, "Has built-up area increased, decreased or remained unchanged?")
+    assert res["details"]["short_answer"] == "increased"
+    assert res["details"]["built_up_direction"]["agree"] is True
+    assert res["answer"].startswith("Built-up increased according to the land-cover model "
+                                    "(resnet18-4band-bigearthnet 1.0.0, bands blue/green/red/nir): "
+                                    f"scene P(urban) 0.40 on {D1} -> 0.70 on {D2} (+0.30; unchanged within ±0.05).")
+    assert "The pixel rules agree." in res["answer"]
+    assert res["confidence"] == 1.0
+    lm = res["trace"]["steps"][-1]["detail"]["landcover_model"]
+    assert lm["used"] and lm["model"] == "resnet18-4band-bigearthnet" and lm["version"] == "1.0.0"
+    assert lm["bands"] == ["blue", "green", "red", "nir"] and lm["delta"] == 0.3
+    assert check_lines_match_numbers(res["answer"], res["details"]) == 1  # area line still consistent
+
+
+def test_model_disagrees_lowers_confidence(pair, fake_model):
+    fake_model(0.60, 0.58)   # model: unchanged; rules: +12.5 pp increased
+    res = run_query(pair, "Has built-up area increased?")
+    assert res["details"]["short_answer"] == "unchanged"
+    assert res["details"]["built_up_direction"] == {**res["details"]["built_up_direction"],
+                                                     "rules_direction": "increased", "agree": False}
+    assert "Disagreement: the pixel rules say built-up increased (+12.50 percentage points" in res["answer"]
+    assert res["confidence"] == 0.5
+
+
+def test_tolerance_param(pair, fake_model):
+    fake_model(0.40, 0.70)
+    res = run_query(pair, "Has built-up area increased?", params={"urban_unchanged_tolerance": 0.4})
+    assert res["details"]["short_answer"] == "unchanged"
+
+
+def test_no_model_falls_back_to_rules(pair):
+    res = run_query(pair, "Has built-up area increased?")
+    assert res["details"]["short_answer"] == "increased" and "built_up_direction" not in res["details"]
+    lm = res["trace"]["steps"][-1]["detail"]["landcover_model"]
+    assert lm["used"] is False and "train it with ml/landcover_patch/train.py" in lm["reason"]
+
+
+def test_model_not_used_for_other_classes(pair, fake_model):
+    fake_model(0.4, 0.7)
+    res = run_query(pair, "Has vegetation changed?")
+    assert "landcover_model" not in res["trace"]["steps"][-1]["detail"]

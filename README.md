@@ -147,6 +147,8 @@ All thresholds are validated parameters (see `GET /api/tools`).
 - **Confidence:** threshold robustness (the share of 27 runs with each index threshold shifted ±0.05 that reach the same conclusion) × a season factor. It is not a probability.
 - **Season check:** index rules count dry bare fields as built-up. If the 90th-percentile NDVI differs by 0.05 or more between the dates, the answer warns, and confidence for built-up, vegetation and other is multiplied by `max(0, 1 - gap/0.15)`.
 
+**Built-up direction** (increased / decreased / unchanged): if the fine-tuned land-cover model is installed, the direction comes from its scene-level P(urban) change between the dates (`urban_unchanged_tolerance`, default 0.05). The pixel rules still drive the area table and the maps. If the two disagree, the answer says so and confidence is halved. The trace records the model name, version, bands and P(urban) per date. On Sarjapur 2019 → 2025 this changes the answer from "decreased" to "increased" (P(urban) 0.72 → 0.94), which matches the images. That answer carries a stated disagreement and confidence 0.06, because of the season mismatch.
+
 **Real-data check (Bengaluru, Sentinel-2 January–March composites):**
 - **Against ESA WorldCover 2021** (four areas, 2021 composites): built-up F1 0.58–0.62 and overall accuracy 0.70–0.74.
 - **Sarjapur Road, 2021 → 2025** (similar seasons): built-up 31.9% → 43.1%, "increased", confidence 1.0.
