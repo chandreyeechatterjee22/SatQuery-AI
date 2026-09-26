@@ -5,7 +5,7 @@ from agent.context import UploadContext
 from agent.params import validate_params
 from agent.registry import PlaceholderTool, Registry, Tool, default_registry
 from agent.tools.metadata import FIELDS, MetadataTool
-from agent.tools.placeholders import ChangePlaceholder, WaterBuiltupPlaceholder, classes_in
+from agent.tools.placeholders import ChangePlaceholder, classes_in
 
 
 def test_default_registry_covers_every_task():
@@ -18,10 +18,11 @@ def test_default_registry_covers_every_task():
         assert errors == []
 
 
-def test_only_metadata_is_available_for_now():
+def test_availability_without_model_weights():
+    # Tests run without weights (see conftest): CLIP tools are unavailable, numpy tools are not.
     available = {t.task: t.availability()[0] for t in default_registry().all()}
     assert available == {tasks.METADATA: True, tasks.CAPTION: False, tasks.VQA: False,
-                         tasks.WATER_BUILTUP: False, tasks.CHANGE: False}
+                         tasks.WATER_BUILTUP: True, tasks.CHANGE: False}
 
 
 def test_registry_rejects_duplicate_task():
@@ -32,7 +33,7 @@ def test_registry_rejects_duplicate_task():
 
 
 def test_placeholder_reports_reason():
-    ok, reason = WaterBuiltupPlaceholder().availability()
+    ok, reason = ChangePlaceholder().availability()
     assert ok is False and "not available" in reason
     with pytest.raises(RuntimeError):
         PlaceholderTool().run(None, {}, "q")

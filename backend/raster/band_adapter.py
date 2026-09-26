@@ -39,15 +39,31 @@ class BandAdapterError(ValueError):
     """The declared sensor does not fit the file's bands."""
 
 
-def resolve_bands(meta, sensor="auto", expected_kind=None):
+IGNORE_ROLE = "-"
+
+
+def parse_band_roles(text):
+    """Parse a user list like "blue, green, red, nir, swir1" (use "-" to ignore a band)."""
+    if text is None or not text.strip():
+        return None
+    return [r.strip().lower() for r in text.split(",")]
+
+
+def resolve_bands(meta, sensor="auto", expected_kind=None, band_roles=None):
     """Return a band profile for a raster metadata dict (see raster.metadata).
 
     ``expected_kind`` ("optical" or "sar") is set when the upload slot already
     says what the file must be, e.g. the second file of an optical_sar pair.
+    ``band_roles`` is an explicit per-band role list from the user; it wins over
+    everything else (e.g. for Earth Engine exports, which drop band names).
     """
     if sensor not in SENSORS:
         raise BandAdapterError(f"unknown sensor {sensor!r}; choose one of {', '.join(SENSORS)}")
     count = meta["band_count"]
+    if band_roles is not None:
+        if sensor != "auto":
+            raise BandAdapterError("give either a sensor or explicit band roles, not both")
+        return _from_user_roles(band_roles, count)
     if sensor != "auto":
         return _from_sensor(sensor, count, "sensor_hint")
 
@@ -90,6 +106,25 @@ def _from_sensor(sensor, count, source):
     if count != len(layout):
         raise BandAdapterError(f"{sensor} expects {len(layout)} bands, file has {count}")
     return _profile(sensor, "optical", layout, source)
+
+
+def _from_user_roles(roles, count):
+    if len(roles) != count:
+        raise BandAdapterError(f"band roles list has {len(roles)} entries but the file has {count} bands")
+    allowed = set(OPTICAL_ROLES) | set(SAR_ROLES) | {IGNORE_ROLE}
+    bad = [r for r in roles if r not in allowed]
+    if bad:
+        raise BandAdapterError(f"unknown band roles {bad}; use {', '.join(sorted(allowed))}")
+    used = [r for r in roles if r != IGNORE_ROLE]
+    if not used:
+        raise BandAdapterError("band roles list marks every band as ignored")
+    if len(set(used)) != len(used):
+        raise BandAdapterError("each band role may appear only once")
+    sar = [r in SAR_ROLES for r in used]
+    if any(sar) and not all(sar):
+        raise BandAdapterError("band roles mix optical and SAR bands in one file")
+    kind = "sar" if all(sar) else "optical"
+    return _profile("user", kind, [None if r == IGNORE_ROLE else r for r in roles], "user_roles")
 
 
 def _from_descriptions(descriptions):

@@ -257,3 +257,29 @@ def test_utm_constant_is_used(tmp_path):
     # Guard: the synthetic helper really writes the CRS we assert on elsewhere.
     res = run("single", [optical(tmp_path)])
     assert res["files"][0]["metadata"]["crs"] == UTM_43N
+
+
+# --- explicit band roles ------------------------------------------------------------
+
+def test_band_roles_make_custom_layout_usable(tmp_path):
+    res = run("single", [optical(tmp_path, count=5)], band_roles=["blue,green,red,nir,swir1"])
+    assert res["ok"], res["reasons"]
+    assert res["files"][0]["bands"]["roles"]["swir1"] == 5
+    assert not any("could not infer" in w for w in res["warnings"])
+
+
+def test_band_roles_for_sar_slot(tmp_path):
+    res = run("optical_sar", [optical(tmp_path), sar(tmp_path)], band_roles=[None, "vh,vv"])
+    assert res["ok"]
+    assert res["files"][1]["bands"]["roles"] == {"vh": 1, "vv": 2}
+
+
+def test_bad_band_roles_rejected(tmp_path):
+    res = run("single", [optical(tmp_path, count=5)], band_roles=["blue,green,red"])
+    assert codes(res) == ["invalid_band_roles"]
+    assert "3 entries but the file has 5" in res["reasons"][0]["message"]
+
+
+def test_optical_slot_with_sar_band_roles(tmp_path):
+    res = run("optical_sar", [optical(tmp_path, count=2), sar(tmp_path)], band_roles=["vv,vh", None])
+    assert codes(res) == ["wrong_modality"]

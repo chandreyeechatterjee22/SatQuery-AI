@@ -23,6 +23,8 @@ async def create_upload(
     date_2: Optional[str] = Form(None, description="YYYY-MM-DD (required for bi_temporal)"),
     sensor_1: Optional[str] = Form(None, description="auto | sentinel2 | cartosat2s | bgrn | rgb | sar"),
     sensor_2: Optional[str] = Form(None, description="auto | sentinel2 | cartosat2s | bgrn | rgb | sar"),
+    band_roles_1: Optional[str] = Form(None, description="comma list per band, e.g. blue,green,red,nir,swir1 ('-' = ignore)"),
+    band_roles_2: Optional[str] = Form(None, description="comma list per band, e.g. vv,vh"),
     benchmark_mode: bool = Form(False, description="also accept PNG/JPEG"),
 ):
     uploads = [u for u in (file_1, file_2) if u is not None and u.filename]
@@ -42,7 +44,8 @@ async def create_upload(
             return _rejected(too_big, [])
 
         result = validate_upload(mode, saved, dates=[date_1, date_2],
-                                 sensors=[sensor_1, sensor_2], benchmark_mode=benchmark_mode)
+                                 sensors=[sensor_1, sensor_2], benchmark_mode=benchmark_mode,
+                                 band_roles=[band_roles_1, band_roles_2])
         if not result["ok"]:
             return _rejected(result["reasons"], result["warnings"])
 

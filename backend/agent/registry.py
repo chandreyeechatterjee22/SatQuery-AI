@@ -39,6 +39,10 @@ class Tool:
         """Derive params from the question. The controller validates them afterwards."""
         return {}
 
+    def check_params(self, params):
+        """Cross-field checks after the allow-list passed. Return a list of error strings."""
+        return []
+
     def inputs(self, ctx):
         """Which uploaded files this tool reads (for the trace)."""
         return [{"slot": f["slot"], "filename": f["filename"], "kind": f["kind"],
@@ -86,7 +90,7 @@ class Registry:
 def default_registry():
     from agent.tools.caption import CaptionTool
     from agent.tools.metadata import MetadataTool
-    from agent.tools.placeholders import ChangePlaceholder, WaterBuiltupPlaceholder
+    from agent.tools.optical_sar import OpticalSarTool
+    from agent.tools.placeholders import ChangePlaceholder
     from agent.tools.vqa import VqaTool
-    return Registry([MetadataTool(), CaptionTool(), VqaTool(),
-                     WaterBuiltupPlaceholder(), ChangePlaceholder()])
+    return Registry([MetadataTool(), CaptionTool(), VqaTool(), OpticalSarTool(), ChangePlaceholder()])

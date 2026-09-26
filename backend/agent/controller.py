@@ -99,6 +99,8 @@ class _Run:
         t = time.perf_counter()
         proposed = {**self.tool.extract_params(self.question, self.ctx), **self.params_override}
         clean, errors = validate_params(self.tool.params, proposed)
+        if not errors:
+            errors = self.tool.check_params(clean)
         if errors:
             self._step("validate_params", "failed", t, {"proposed": proposed, "errors": errors})
             return self._finish(REJECTED, "Invalid parameters: " + "; ".join(errors) + ".")
@@ -123,7 +125,7 @@ class _Run:
                    {**result.trace, "evidence_images": len(result.evidence_images)})
         # The reported confidence is the tool's own (e.g. a softmax probability);
         # how sure the router was about the task is kept separately in the trace.
-        confidence = round(result.confidence, 4)
+        confidence = None if result.confidence is None else round(result.confidence, 4)
         return self._finish(OK, result.answer, confidence, result.evidence_images, result.data,
                             tool_confidence=confidence)
 

@@ -107,3 +107,43 @@ def test_expected_optical_slot_does_not_force_sar():
 def test_hint_mismatch_raises(sensor, count, match):
     with pytest.raises(BandAdapterError, match=match):
         resolve_bands(meta(count), sensor=sensor)
+
+
+# --- explicit band roles --------------------------------------------------------
+
+from raster.band_adapter import parse_band_roles  # noqa: E402
+
+
+def test_parse_band_roles():
+    assert parse_band_roles(" Blue, green ,RED,nir, swir1 ") == ["blue", "green", "red", "nir", "swir1"]
+    assert parse_band_roles("") is None and parse_band_roles(None) is None
+
+
+def test_user_roles_for_custom_sentinel2_subset():
+    p = resolve_bands(meta(5), band_roles=["blue", "green", "red", "nir", "swir1"])
+    assert p["sensor"] == "user" and p["kind"] == "optical" and p["source"] == "user_roles"
+    assert p["roles"] == {"blue": 1, "green": 2, "red": 3, "nir": 4, "swir1": 5}
+    assert p["warnings"] == []
+
+
+def test_user_roles_can_ignore_bands_and_mark_sar():
+    p = resolve_bands(meta(3), band_roles=["vv", "-", "vh"])
+    assert p["kind"] == "sar" and p["roles"] == {"vv": 1, "vh": 3}
+    assert p["band_names"] == ["vv", "band_2", "vh"]
+
+
+@pytest.mark.parametrize("roles, count, match", [
+    (["red", "green"], 3, "has 2 entries but the file has 3"),
+    (["red", "infrared"], 2, "unknown band roles"),
+    (["-", "-"], 2, "every band as ignored"),
+    (["red", "red"], 2, "only once"),
+    (["red", "vv"], 2, "mix optical and SAR"),
+])
+def test_bad_user_roles(roles, count, match):
+    with pytest.raises(BandAdapterError, match=match):
+        resolve_bands(meta(count), band_roles=roles)
+
+
+def test_user_roles_and_sensor_are_exclusive():
+    with pytest.raises(BandAdapterError, match="not both"):
+        resolve_bands(meta(4), sensor="cartosat2s", band_roles=["blue", "green", "red", "nir"])

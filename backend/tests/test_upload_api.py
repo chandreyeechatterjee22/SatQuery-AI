@@ -163,3 +163,15 @@ def test_main_app_mounts_upload_routes():
     assert {"/api/uploads", "/api/uploads/{upload_id}"} <= paths
     # The Earth Engine routes are still there.
     assert {"/api/sentinel", "/api/analyze", "/api/states"} <= paths
+
+
+def test_band_roles_form_fields(client, src):
+    r = client.post("/api/uploads",
+                    data={"mode": "optical_sar", "band_roles_1": "blue,green,red,nir,swir1",
+                          "band_roles_2": "vv,vh"},
+                    files={"file_1": ("s2.tif", tif(src / "o.tif", count=5)),
+                           "file_2": ("s1.tif", tif(src / "s.tif", count=2, dtype="float32"))})
+    assert r.status_code == 201, r.json()
+    files = r.json()["files"]
+    assert files[0]["bands"]["source"] == "user_roles" and files[0]["bands"]["roles"]["swir1"] == 5
+    assert files[1]["bands"]["roles"] == {"vv": 1, "vh": 2}

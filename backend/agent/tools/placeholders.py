@@ -8,7 +8,6 @@ import re
 from agent import tasks
 from agent.registry import PlaceholderTool
 
-WATER_BUILTUP_CLASSES = ["water", "built_up"]
 LANDCOVER_CLASSES = ["water", "built_up", "vegetation", "other"]
 
 _CLASS_PATTERNS = {
@@ -22,18 +21,6 @@ def classes_in(question, allowed):
     found = [c for c, p in _CLASS_PATTERNS.items()
              if c in allowed and re.search(p, question, re.IGNORECASE)]
     return found or list(allowed)
-
-
-class WaterBuiltupPlaceholder(PlaceholderTool):
-    name = "optical_sar_mapper"
-    task = tasks.WATER_BUILTUP
-    description = "Map water and built-up area from an optical + SAR pair."
-    params = {"classes": {"type": "enum_list", "choices": WATER_BUILTUP_CLASSES,
-                          "min_items": 1, "default": WATER_BUILTUP_CLASSES}}
-    unavailable_reason = "Optical + SAR water/built-up mapping is not available yet."
-
-    def extract_params(self, question, ctx):
-        return {"classes": classes_in(question, WATER_BUILTUP_CLASSES)}
 
 
 class ChangePlaceholder(PlaceholderTool):
