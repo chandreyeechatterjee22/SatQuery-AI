@@ -9,6 +9,7 @@ import { describeError, fetchAreas, fetchGeeStatus, fetchLocation, fetchStates, 
 import { bboxAround, bboxSizeKm, geeFetchProblems } from './lib/format.js';
 import DistrictSelect from '../components/DistrictSelect';
 import MapAutoResize from '../components/MapAutoResize';
+import ImageryDepthGuard from '../components/ImageryDepthGuard';
 import { ESRI_IMAGERY_URL, imageryTileOptions } from './lib/mapTiles.js';
 
 const inputClass = 'w-full rounded-lg border border-space-700 bg-space-900/70 px-2 py-1.5 text-xs text-white '
@@ -31,6 +32,18 @@ const FlyTo = ({ centre }) => {
 };
 
 const DEFAULT_CENTRE = { lat: 12.93, lon: 77.66, zoom: 12 };  // Bellandur, Bengaluru
+
+/** Esri imagery that never shows "Map data not yet available" tiles (see ImageryDepthGuard). */
+const GuardedImagery = () => {
+    const ref = useRef(null);
+    const opts = imageryTileOptions(window.devicePixelRatio);
+    return (
+        <>
+            <TileLayer url={ESRI_IMAGERY_URL} attribution="Esri" {...opts} ref={ref} />
+            <ImageryDepthGuard layerRef={ref} baseMaxNativeZoom={opts.maxNativeZoom} />
+        </>
+    );
+};
 
 /** Re-create the editable rectangle if the map was re-mounted (e.g. after switching area type). */
 const RestoreRectangle = ({ drawn, groupRef }) => {
@@ -173,7 +186,7 @@ const GeeFetch = ({ onFetched, disabled }) => {
                             <p className="text-gray-500">Large districts are only partly covered — use Draw rectangle for a specific spot.</p>
                             <div className="h-48 overflow-hidden rounded-lg border border-space-700" data-testid="gee-district-map">
                                 <MapContainer center={[DEFAULT_CENTRE.lat, DEFAULT_CENTRE.lon]} zoom={5} className="h-full w-full" scrollWheelZoom={false}>
-                                    <TileLayer url={ESRI_IMAGERY_URL} attribution="Esri" {...imageryTileOptions(window.devicePixelRatio)} />
+                                    <GuardedImagery />
                                     <MapAutoResize />
                                     <FlyTo centre={centre} />
                                     {bbox && <Rectangle bounds={[[bbox[1], bbox[0]], [bbox[3], bbox[2]]]} pathOptions={{ color: '#5BC0BE', weight: 2 }} />}
@@ -199,7 +212,7 @@ const GeeFetch = ({ onFetched, disabled }) => {
                                     {/* Opens on the chosen district when there is one, else on Bellandur. */}
                                     <MapContainer center={[(centre || DEFAULT_CENTRE).lat, (centre || DEFAULT_CENTRE).lon]}
                                         zoom={centre ? Math.max(centre.zoom, 11) : DEFAULT_CENTRE.zoom} className="h-full w-full">
-                                        <TileLayer url={ESRI_IMAGERY_URL} attribution="Esri" {...imageryTileOptions(window.devicePixelRatio)} />
+                                        <GuardedImagery />
                                     <MapAutoResize />
                                         <ResizeWatcher expanded={expanded} />
                                         <FeatureGroup ref={groupRef}>
