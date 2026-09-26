@@ -51,6 +51,7 @@ Copy-Item .env.example .env
 | `MODEL_CACHE_DIR` | `<repo>/data/models` | Model weights (git-ignored) |
 | `REMOTECLIP_CHECKPOINT` | `<cache>/remoteclip/RemoteCLIP-ViT-B-32.pt` | RemoteCLIP weights |
 | `VQA_HEAD_PATH` | `<cache>/vqa_head/rsvqa_lr_head.pt` | Trained VQA head |
+| `LANDCOVER_PATCH_PATH` | `<cache>/landcover_patch/resnet18_4band_ben.pt` | BigEarthNet-fine-tuned 4-band land-cover classifier |
 
 3. Authenticate with Earth Engine. For local development, run:
 ```powershell
@@ -164,6 +165,13 @@ python scripts\benchmark_remoteclip.py       # speed and RAM on this machine
 ```
 
 To train the RSVQA-LR VQA head, see [ml/vqa_head/README.md](ml/vqa_head/README.md).
+
+## Fine-tuned component: 4-band land-cover classifier (BigEarthNet)
+
+[ml/landcover_patch](ml/landcover_patch/README.md) fine-tunes a B/G/R/NIR ResNet-18 (so it can run on Cartosat-2S too) on a BigEarthNet v2 subset. Training and evaluation dependencies are in `ml/requirements.txt`.
+
+- **Before vs after on held-out BigEarthNet test** (linear probe -> full fine-tune): micro mAP 0.690 -> 0.806, macro mAP 0.506 -> 0.664, macro F1 0.410 -> 0.598.
+- **Not wired into change analysis:** a check fixed in advance against ESA WorldCover 2021 on four Bengaluru areas showed no gain for built-up (holdout F1 -0.019). The model therefore stays a reported component; details and the domain-shift caveat are in its README.
 
 ## Frontend Setup
 
