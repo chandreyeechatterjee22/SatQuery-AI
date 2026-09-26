@@ -69,7 +69,8 @@ def test_evidence_path_is_locked_down(client, make_upload, name):
 def test_tools_listing(client):
     tools = {t["name"]: t for t in client.get("/api/tools").json()["tools"]}
     assert tools["image_metadata"]["available"] is True
-    assert tools["landcover_change"]["available"] is False
+    assert tools["landcover_change"]["available"] is True
+    assert tools["rs_vqa"]["available"] is False  # no weights in tests
     assert tools["optical_sar_mapper"]["params"]["classes"]["choices"] == ["water", "built_up"]
 
 

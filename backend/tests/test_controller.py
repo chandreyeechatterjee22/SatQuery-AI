@@ -4,7 +4,7 @@ import pytest
 
 from agent import tasks
 from agent.controller import run_query
-from agent.registry import Registry, Tool, ToolResult, default_registry
+from agent.registry import PlaceholderTool, Registry, Tool, ToolResult, default_registry
 
 TRACE_KEYS = {"task", "rerouted_from", "tool", "tool_version", "params", "inputs", "duration_ms",
               "status", "confidence", "steps"}
@@ -44,12 +44,22 @@ def test_metadata_question_runs_end_to_end(make_upload, upload_dir):
     assert json.loads(saved.read_text()) == res
 
 
-def test_placeholder_tool_reports_not_available(make_upload):
+class _NotYet(PlaceholderTool):
+    name, task = "landcover_change", tasks.CHANGE
+    params = {"classes": {"type": "enum_list", "choices": ["water", "built_up"], "default": ["water"]}}
+    unavailable_reason = "Model not loaded."
+
+    def extract_params(self, question, ctx):
+        return {"classes": ["built_up"]}
+
+
+def test_unavailable_tool_reports_not_available(make_upload):
     uid = make_upload("bi_temporal", [{}, {}], dates=["2023-01-01", "2025-01-01"])
-    res = run_query(uid, "Has built-up area increased, decreased or remained unchanged?")
+    res = run_query(uid, "Has built-up area increased, decreased or remained unchanged?",
+                    registry=Registry([_NotYet()]))
 
     assert res["status"] == "NOT_AVAILABLE"
-    assert res["answer"].startswith("Not available:")
+    assert res["answer"] == "Not available: Model not loaded."
     assert res["confidence"] is None and res["evidence_images"] == []
     assert res["trace"]["tool"] == "landcover_change"
     assert res["trace"]["params"] == {"classes": ["built_up"]}

@@ -28,3 +28,29 @@ def optical_sar_scene():
     sar[3, 7] = SAR_VEG
     sar[7, 7] = SAR_WATER
     return optical, sar[None]
+
+
+# Land-cover pixel recipes (blue, green, red, nir) for 4-band BGRN images without SWIR.
+LC_WATER = (500, 1000, 300, 200)    # NDWI 0.67
+LC_VEG = (500, 600, 400, 3000)      # NDVI 0.76
+LC_BUILT = (500, 800, 900, 1000)    # NDVI 0.05 (< 0.2 low-NDVI proxy)
+LC_OTHER = (500, 800, 900, 1500)    # NDVI 0.25 (between 0.2 and 0.3), NDWI < 0
+
+
+def landcover_image(rows):
+    """8 x 8 BGRN uint16 image from 8 row recipes."""
+    img = np.zeros((4, 8, 8), dtype="uint16")
+    for r, recipe in enumerate(rows):
+        for band, value in enumerate(recipe):
+            img[band, r, :] = value
+    return img
+
+
+def bitemporal_scene():
+    """Before: 2 rows water, 2 built-up, 4 vegetation.
+    After:  2 rows water, 3 built-up, 2 vegetation, 1 other.
+    -> water 25 -> 25 (unchanged), built-up 25 -> 37.5, vegetation 50 -> 25, other 0 -> 12.5.
+    """
+    before = landcover_image([LC_WATER] * 2 + [LC_BUILT] * 2 + [LC_VEG] * 4)
+    after = landcover_image([LC_WATER] * 2 + [LC_BUILT] * 3 + [LC_VEG] * 2 + [LC_OTHER])
+    return before, after

@@ -89,8 +89,8 @@ class Registry:
 
 def default_registry():
     from agent.tools.caption import CaptionTool
+    from agent.tools.change import ChangeTool
     from agent.tools.metadata import MetadataTool
     from agent.tools.optical_sar import OpticalSarTool
-    from agent.tools.placeholders import ChangePlaceholder
     from agent.tools.vqa import VqaTool
-    return Registry([MetadataTool(), CaptionTool(), VqaTool(), OpticalSarTool(), ChangePlaceholder()])
+    return Registry([MetadataTool(), CaptionTool(), VqaTool(), OpticalSarTool(), ChangeTool()])
