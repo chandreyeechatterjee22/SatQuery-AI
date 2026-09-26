@@ -1,0 +1,32 @@
+# 4-band (B, G, R, NIR) ResNet-18 land-cover patch classifier fine-tuned on a BigEarthNet v2 subset.
+# Relative paths are resolved from the repo root. Everything under data/ is git-ignored.
+
+dataset:
+  repo: timm/bigearthnet-v2-rgb-nir-swir      # CDLA-Permissive-1.0; official geographic splits
+  columns: [image, nir, labels, image_id, country]
+  subset_dir: data/bigearthnet_subset
+  seed: 0
+  max_country_share: 0.25                    # cap e.g. Finland (30% of the data)
+  patches:                                   # whole 100-patch row groups are sampled
+    train: 15000
+    validation: 3000
+    test: 5000
+
+output_dir: data/models/landcover_patch
+checkpoint: data/models/landcover_patch/resnet18_4band_ben.pt  # default LANDCOVER_PATCH_PATH
+
+train:
+  seed: 0
+  batch_size: 64
+  num_threads: 2
+  num_workers: 0              # DataLoader workers (keep 0 on Windows)
+  probe:                     # "before": frozen ImageNet backbone + linear head
+    epochs: 30
+    lr: 0.001
+    weight_decay: 0.0001
+  finetune:                  # "after": full fine-tune
+    epochs: 6
+    lr: 0.0005
+    weight_decay: 0.0001
+    patience: 2              # early stopping on validation micro mAP
+  augment: true              # random flips / 90-degree rotations
