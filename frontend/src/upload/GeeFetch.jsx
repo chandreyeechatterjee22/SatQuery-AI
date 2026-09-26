@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, FeatureGroup, Rectangle } from 'react-leaflet';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import L from 'leaflet';
+import { MapContainer, TileLayer, FeatureGroup, useMap } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import { FiCloud, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import 'leaflet/dist/leaflet.css';
@@ -11,6 +12,24 @@ const inputClass = 'w-full rounded-lg border border-space-700 bg-space-900/70 px
     + 'focus:border-accent-cyan focus:outline-none';
 const MODES = [['single', 'Single image'], ['optical_sar', 'Optical + SAR'], ['bi_temporal', 'Two dates']];
 const DEFAULT_RANGES = [['2024-01-01', '2024-03-31'], ['2025-01-01', '2025-03-31']];
+
+/** Leaflet must re-measure its container when the map is enlarged or shrunk. */
+const ResizeWatcher = ({ expanded }) => {
+    const map = useMap();
+    useEffect(() => { const t = setTimeout(() => map.invalidateSize(), 60); return () => clearTimeout(t); }, [expanded, map]);
+    return null;
+};
+
+/** Re-create the editable rectangle if the map was re-mounted (e.g. after switching area type). */
+const RestoreRectangle = ({ drawn, groupRef }) => {
+    useEffect(() => {
+        const group = groupRef.current;
+        if (drawn && group && group.getLayers().length === 0) {
+            L.rectangle([[drawn[1], drawn[0]], [drawn[3], drawn[2]]], { color: '#5BC0BE' }).addTo(group);
+        }
+    }, [drawn, groupRef]);
+    return null;
+};
 
 /** "Fetch from Earth Engine": area + dates -> analysis-ready GeoTIFFs -> a normal upload. */
 const GeeFetch = ({ onFetched, disabled }) => {
@@ -28,6 +47,8 @@ const GeeFetch = ({ onFetched, disabled }) => {
     const [ranges, setRanges] = useState(DEFAULT_RANGES);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [expanded, setExpanded] = useState(false);
+    const groupRef = useRef(null);
 
     useEffect(() => {
         if (!open || status) return;
@@ -56,11 +77,17 @@ const GeeFetch = ({ onFetched, disabled }) => {
 
     const setRange = (i, j, value) => setRanges(ranges.map((r, k) => (k === i ? r.map((v, m) => (m === j ? value : v)) : r)));
 
-    const onCreated = (e) => {
-        const b = e.layer.getBounds();
-        setDrawn([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((v) => Math.round(v * 1e6) / 1e6));
-        e.layer.remove();   // shown via <Rectangle> so only the latest one is kept
+    const toBbox = (layer) => {
+        const b = layer.getBounds();
+        return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((v) => Math.round(v * 1e6) / 1e6);
     };
+    const onCreated = (e) => {
+        // Keep only the newest rectangle; it stays in the group so it can be edited (resized / moved).
+        groupRef.current?.getLayers().forEach((l) => { if (l !== e.layer) groupRef.current.removeLayer(l); });
+        setDrawn(toBbox(e.layer));
+    };
+    const onEdited = (e) => e.layers.eachLayer((l) => setDrawn(toBbox(l)));
+    const onDeleted = () => { if (!groupRef.current?.getLayers().length) setDrawn(null); };
 
     const submit = async () => {
         if (problems.length || busy) return;
@@ -125,20 +152,42 @@ const GeeFetch = ({ onFetched, disabled }) => {
                             </label>
                         </div>
                     ) : (
-                        <div className="h-56 overflow-hidden rounded-lg border border-space-700" data-testid="gee-mini-map">
-                            <MapContainer center={[12.93, 77.66]} zoom={11} className="h-full w-full">
-                                <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                                    attribution="Esri" />
-                                <FeatureGroup>
-                                    <EditControl position="topleft" onCreated={onCreated}
-                                        // showArea: false avoids leaflet-draw 1.0.4's readableArea bug ('type is not defined').
-                                        draw={{ rectangle: { showArea: false, shapeOptions: { color: '#5BC0BE' } }, polygon: false, polyline: false,
-                                            circle: false, circlemarker: false, marker: false }}
-                                        edit={{ edit: false, remove: false }} />
-                                </FeatureGroup>
-                                {drawn && <Rectangle bounds={[[drawn[1], drawn[0]], [drawn[3], drawn[2]]]} pathOptions={{ color: '#5BC0BE' }} />}
-                            </MapContainer>
-                        </div>
+                        <>
+                            {expanded && <div className="fixed inset-0 z-[2999] bg-black/60" onClick={() => setExpanded(false)} />}
+                            <div data-testid="gee-mini-map"
+                                className={expanded
+                                    ? 'fixed inset-4 sm:inset-10 z-[3000] flex flex-col gap-2 rounded-2xl border border-space-700 bg-space-900 p-3 shadow-2xl'
+                                    : 'flex flex-col gap-2'}>
+                                {expanded && (
+                                    <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-gray-200">
+                                        <span>Draw a rectangle (square tool), or resize/move it with the edit tool (pencil) and click Save.</span>
+                                        <span className="text-gray-400">{size ? `Area: ${size.width.toFixed(1)} x ${size.height.toFixed(1)} km (max ${maxKm} x ${maxKm})` : 'No area yet'}</span>
+                                        <button type="button" onClick={() => setExpanded(false)}
+                                            className="rounded-lg bg-accent-blue px-4 py-1.5 font-semibold text-white hover:bg-accent-cyan">Done</button>
+                                    </div>
+                                )}
+                                <div className={`${expanded ? 'flex-1' : 'h-72'} overflow-hidden rounded-lg border border-space-700`}>
+                                    <MapContainer center={[12.93, 77.66]} zoom={12} className="h-full w-full">
+                                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                                            attribution="Esri" />
+                                        <ResizeWatcher expanded={expanded} />
+                                        <FeatureGroup ref={groupRef}>
+                                            <EditControl position="topleft" onCreated={onCreated} onEdited={onEdited} onDeleted={onDeleted}
+                                                // showArea: false avoids leaflet-draw 1.0.4's readableArea bug ('type is not defined').
+                                                draw={{ rectangle: { showArea: false, shapeOptions: { color: '#5BC0BE' } }, polygon: false,
+                                                    polyline: false, circle: false, circlemarker: false, marker: false }} />
+                                            <RestoreRectangle drawn={drawn} groupRef={groupRef} />
+                                        </FeatureGroup>
+                                    </MapContainer>
+                                </div>
+                                {!expanded && (
+                                    <button type="button" onClick={() => setExpanded(true)}
+                                        className="self-start rounded-lg border border-space-700 px-3 py-1 text-gray-200 hover:border-accent-cyan hover:text-accent-cyan">
+                                        Enlarge map
+                                    </button>
+                                )}
+                            </div>
+                        </>
                     )}
                     {size && <p className="text-gray-400">Area: {size.width.toFixed(1)} x {size.height.toFixed(1)} km</p>}
 
