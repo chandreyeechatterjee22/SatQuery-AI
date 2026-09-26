@@ -97,16 +97,16 @@ const ResultsPanel = ({ selectedState, selectedArea, query, sentinelData, analys
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-5">
-                <div className="p-3 rounded-xl bg-space-900/60 border border-space-700">
+                <div className="p-3 rounded-lg bg-space-900/60 border border-space-700">
                     <p className="text-xs text-gray-500 mb-1">Detected Area</p>
                     <p className="text-lg font-bold text-white">{analysisResult.stats.area} {analysisResult.stats.area_unit}</p>
                 </div>
-                <div className="p-3 rounded-xl bg-space-900/60 border border-space-700">
+                <div className="p-3 rounded-lg bg-space-900/60 border border-space-700">
                     <p className="text-xs text-gray-500 mb-1">AOI Coverage</p>
                     <p className="text-lg font-bold text-accent-cyan">{analysisResult.stats.percentage_coverage}%</p>
                 </div>
                 {mean && (
-                    <div className="p-3 rounded-xl bg-space-900/60 border border-space-700 col-span-2">
+                    <div className="p-3 rounded-lg bg-space-900/60 border border-space-700 col-span-2">
                         <p className="text-xs text-gray-500 mb-1">{mean.label}</p>
                         <p className="text-lg font-bold text-white">{mean.value}</p>
                     </div>
@@ -164,7 +164,7 @@ const ResultsPanel = ({ selectedState, selectedArea, query, sentinelData, analys
 
             <button
                 onClick={() => downloadReport({ selectedState, selectedArea, query, sentinelData, analysisResult })}
-                className="mt-5 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-space-700 hover:border-accent-cyan hover:text-accent-cyan text-sm font-semibold transition-colors"
+                className="mt-5 w-full flex items-center justify-center gap-2 py-2.5 rounded-full border border-white/15 hover:border-white hover:text-white text-sm font-semibold transition-colors"
             >
                 <FiDownload /> Download Report
             </button>

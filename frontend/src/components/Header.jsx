@@ -12,32 +12,32 @@ const Header = ({ view = 'map', onViewChange }) => {
     };
 
     return (
-        <header className="flex items-center justify-between px-6 py-3 bg-space-800/95 backdrop-blur-xl border-b border-space-700/60 text-white">
-            <div className="flex items-center gap-2">
-                <FaSatellite className="text-accent-cyan" size={22} />
-                <span className="text-lg font-bold tracking-tight">
-                    SatQuery <span className="bg-gradient-to-r from-accent-cyan to-accent-blue bg-clip-text text-transparent">AI</span>
+        <header className="flex items-center justify-between gap-3 border-b border-white/[0.07] bg-space-900/90 px-4 py-3 text-white backdrop-blur-xl sm:px-6">
+            <div className="flex shrink-0 items-center gap-2">
+                <FaSatellite className="text-white" size={18} />
+                <span className="whitespace-nowrap font-display text-base tracking-[-0.01em] sm:text-lg">
+                    SatQuery <span className="text-muted">AI</span>
                 </span>
             </div>
 
-            <nav className="flex items-center gap-2 sm:gap-6 text-sm font-medium text-gray-300">
+            <nav className="flex items-center gap-2 text-sm font-medium text-gray-300 sm:gap-6">
                 {onViewChange && (
-                    <div className="flex rounded-lg border border-space-700 bg-space-900/60 p-0.5" role="tablist">
+                    <div className="flex rounded-full border border-white/10 bg-white/[0.03] p-1" role="tablist">
                         {VIEWS.map((v) => (
                             <button key={v.key} role="tab" aria-selected={view === v.key} onClick={() => onViewChange(v.key)}
-                                className={`rounded-md px-3 py-1 text-xs sm:text-sm transition-colors ${view === v.key
-                                    ? 'bg-accent-blue text-white' : 'text-gray-300 hover:text-accent-cyan'}`}>
+                                className={`whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors sm:px-4 sm:text-sm ${view === v.key
+                                    ? 'bg-white text-primary' : 'text-gray-300 hover:text-white'}`}>
                                 {v.label}
                             </button>
                         ))}
                     </div>
                 )}
                 {view === 'map' && (
-                    <button onClick={() => scrollTo('explore')} className="hidden sm:block hover:text-accent-cyan transition-colors">Explore</button>
+                    <button onClick={() => scrollTo('explore')} className="hidden transition-colors hover:text-white sm:block">Explore</button>
                 )}
             </nav>
 
-            <div className="hidden sm:flex items-center gap-1.5 text-sm text-gray-300 px-3 py-1.5 rounded-lg border border-space-700 bg-space-900/60">
+            <div className="hidden items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-mono text-xs uppercase tracking-[0.08em] text-gray-300 sm:flex">
                 <span>🇮🇳</span> India
             </div>
         </header>

@@ -16,7 +16,7 @@ const AnswerCard = ({ result }) => {
     const warnings = (result.details?.warnings || []).filter((w) => !result.answer?.includes(w));
 
     return (
-        <section aria-label="Technical answer" className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
+        <section aria-label="Technical answer" className="rounded-lg border border-white/[0.07] bg-space-800 p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <span className={`rounded-full border px-3 py-0.5 text-xs font-semibold ${TONES[style.tone]}`}>
                     {style.label}{result.status !== 'OK' ? ` (${result.status})` : ''}
@@ -38,7 +38,7 @@ const AnswerCard = ({ result }) => {
                 <div className="h-2 w-full overflow-hidden rounded-full bg-space-900" role="meter"
                     aria-valuemin={0} aria-valuemax={1} aria-valuenow={conf ?? undefined} aria-label="Confidence">
                     {conf != null && (
-                        <div className="h-full rounded-full bg-gradient-to-r from-accent-blue to-accent-cyan"
+                        <div className="h-full rounded-full bg-accent-cyan"
                             style={{ width: `${Math.round(conf * 100)}%` }} />
                     )}
                 </div>

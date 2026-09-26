@@ -11,8 +11,8 @@ const ICONS = {
 const TraceTimeline = ({ trace }) => {
     if (!trace) return null;
     return (
-        <section aria-label="Execution trace" className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
-            <h3 className="mb-2 text-sm font-semibold text-white">Execution trace</h3>
+        <section aria-label="Execution trace" className="rounded-lg border border-white/[0.07] bg-space-800 p-5">
+            <h3 className="mb-3 font-mono text-xs font-normal uppercase tracking-[0.1em] text-muted">Execution trace</h3>
             <dl className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
                 <Fact label="Task" value={trace.task + (trace.rerouted_from ? ` (from ${trace.rerouted_from})` : '')} />
                 <Fact label="Tool" value={trace.tool ? `${trace.tool} ${trace.tool_version}` : '-'} />

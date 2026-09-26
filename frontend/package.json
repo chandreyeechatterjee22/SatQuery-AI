@@ -8,19 +8,26 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test src/upload/lib/"
+    "test": "node --test src/upload/lib/ src/components/globe/lib/"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
     "@react-leaflet/core": "^3.0.0",
     "@types/leaflet": "^1.9.22",
     "axios": "^1.20.0",
+    "d3-geo": "^3.1.1",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-icons": "^5.7.0",
     "react-leaflet": "^5.0.0",
-    "react-leaflet-draw": "^0.21.0"
+    "react-leaflet-draw": "^0.21.0",
+    "three": "^0.180.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
