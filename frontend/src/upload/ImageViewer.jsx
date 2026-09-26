@@ -22,7 +22,7 @@ const ImageViewer = ({ upload, result }) => {
     const visible = overlays.filter((o) => (o.base || 'preview_1') === base.id);
 
     return (
-        <section aria-label="Image viewer" className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
+        <section aria-label="Image viewer" className="rounded-lg border border-white/[0.07] bg-space-800 p-5">
             <div className="mb-3 flex flex-wrap gap-2">
                 {bases.map((b) => (
                     <button key={b.id} type="button" onClick={() => setBaseId(b.id)}
@@ -33,7 +33,7 @@ const ImageViewer = ({ upload, result }) => {
                 ))}
             </div>
 
-            <div className="relative overflow-hidden rounded-xl border border-space-700 bg-black">
+            <div className="relative overflow-hidden rounded-lg border border-white/[0.07] bg-black">
                 {failed[base.id] ? (
                     <p className="p-6 text-center text-xs text-red-300" role="alert">Could not load {base.label}.</p>
                 ) : (

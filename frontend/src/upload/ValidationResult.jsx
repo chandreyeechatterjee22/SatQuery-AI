@@ -13,7 +13,7 @@ const ValidationResult = ({ result }) => {
 
     if (!result.ok) {
         return (
-            <div role="alert" className="rounded-xl border border-red-500/50 bg-red-500/10 p-3 text-sm">
+            <div role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm">
                 <p className="mb-2 flex items-center gap-2 font-semibold text-red-300"><FiXCircle /> Upload rejected</p>
                 <ul className="space-y-1 text-red-200">
                     {(result.body?.reasons || []).map((r, i) => (
@@ -28,7 +28,7 @@ const ValidationResult = ({ result }) => {
 
     const m = result.body;
     return (
-        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm">
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm">
             <p className="mb-2 flex items-center gap-2 font-semibold text-emerald-300">
                 <FiCheckCircle /> Accepted <span className="font-normal text-gray-400">({m.mode}, id {m.upload_id.slice(0, 8)})</span>
             </p>

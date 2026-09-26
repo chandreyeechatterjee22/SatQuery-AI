@@ -64,7 +64,7 @@ const UploadForm = ({ onSubmit, busy }) => {
             <div className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">2. Files</p>
                 {spec.files.map((f) => (
-                    <div key={`${mode}-${f.slot}`} className="rounded-xl border border-space-700/70 bg-space-900/40 p-3 space-y-2">
+                    <div key={`${mode}-${f.slot}`} className="rounded-lg border border-white/[0.07] bg-space-900/60 p-3 space-y-2">
                         <label className="block text-sm font-medium text-gray-200">
                             {f.label} <span className="text-xs font-normal text-gray-500">({f.hint})</span>
                             <input type="file"
@@ -122,7 +122,7 @@ const UploadForm = ({ onSubmit, busy }) => {
             )}
 
             <button type="submit" disabled={problems.length > 0 || busy}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-blue to-accent-cyan px-4 py-2.5 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-40">
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-soft-stone disabled:cursor-not-allowed disabled:opacity-40">
                 <FiUploadCloud /> {busy ? 'Uploading and validating...' : 'Upload and validate'}
             </button>
         </form>

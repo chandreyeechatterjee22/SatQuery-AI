@@ -64,8 +64,8 @@ const UploadAnalysis = () => {
     return (
         <section id="upload-analysis" className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[380px_1fr]">
             <aside className="space-y-4">
-                <div className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
-                    <h2 className="mb-3 text-base font-semibold text-white">Upload satellite images</h2>
+                <div className="rounded-lg border border-white/[0.07] bg-space-800 p-5">
+                    <h2 className="mb-4 font-display text-xl font-normal tracking-[-0.01em] text-white">Upload satellite images</h2>
                     <UploadForm onSubmit={handleUpload} busy={busy === 'upload'} />
                 </div>
                 <GeeFetch onFetched={handleFetched} disabled={busy !== ''} />
@@ -74,13 +74,13 @@ const UploadAnalysis = () => {
             </aside>
 
             <div className="space-y-4 min-w-0">
-                <div className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
-                    <h2 className="mb-3 text-base font-semibold text-white">Ask a question</h2>
+                <div className="rounded-lg border border-white/[0.07] bg-space-800 p-5">
+                    <h2 className="mb-4 font-display text-xl font-normal tracking-[-0.01em] text-white">Ask a question</h2>
                     <QuestionBox mode={upload?.mode || 'single'} disabled={!upload || busy === 'upload'} busy={busy === 'query'} onAsk={handleAsk} />
                 </div>
 
                 {error && (
-                    <p role="alert" className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>
+                    <p role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>
                 )}
 
                 {upload && (
@@ -94,7 +94,7 @@ const UploadAnalysis = () => {
                 )}
                 {result && <TraceTimeline trace={result.trace} />}
                 {!upload && (
-                    <p className="rounded-2xl border border-dashed border-space-700 p-8 text-center text-sm text-gray-500">
+                    <p className="rounded-lg border border-dashed border-white/15 p-10 text-center text-sm text-gray-500">
                         Upload a GeoTIFF (or an optical + SAR pair, or two dates) to start asking questions.
                     </p>
                 )}
@@ -106,8 +106,8 @@ const UploadAnalysis = () => {
 const ToolStatus = ({ tools }) => {
     if (!tools) return null;
     return (
-        <div className="rounded-2xl border border-space-700/60 bg-space-800/60 p-3 text-xs">
-            <p className="mb-2 flex items-center gap-1.5 font-semibold text-gray-300"><FiCpu /> Tools on this server</p>
+        <div className="rounded-lg border border-white/[0.07] bg-space-800 p-4 text-xs">
+            <p className="mb-3 flex items-center gap-1.5 font-mono uppercase tracking-[0.08em] text-muted"><FiCpu /> Tools on this server</p>
             <ul className="space-y-1">
                 {tools.map((t) => (
                     <li key={t.name} className="flex justify-between gap-2">

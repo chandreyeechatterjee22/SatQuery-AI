@@ -143,13 +143,13 @@ function App() {
 
                 <div className="relative flex-1 w-1/2 h-full p-4">
                     {loadingMessage && (
-                        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-3 rounded-full border border-accent-cyan/40 bg-space-800/80 px-6 py-3 text-sm font-medium text-white shadow-2xl backdrop-blur-md">
+                        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-3 rounded-full border border-accent-cyan/40 bg-space-800/80 px-6 py-3 text-sm font-medium text-white backdrop-blur-md">
                             <div className="w-4 h-4 border-2 border-accent-cyan border-t-transparent rounded-full animate-spin"></div>
                             {loadingMessage}
                         </div>
                     )}
 
-                    <div className="h-full w-full overflow-hidden rounded-2xl shadow-2xl ring-1 ring-space-700/60">
+                    <div className="h-full w-full overflow-hidden rounded-lg ring-1 ring-white/[0.07]">
                         <MapComponent
                             onGeometryChange={handleGeometryChange}
                             sentinelTileUrl={sentinelData?.tile_url}

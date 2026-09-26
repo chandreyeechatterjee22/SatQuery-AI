@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
 @theme {
-  --color-space-900: #0B132B;
-  --color-space-800: #1C2541;
-  --color-space-700: #3A506B;
-  --color-accent-cyan: #5BC0BE;
-  --color-accent-blue: #1C77C3;
+  /* Legacy token names are kept (every component uses them); their values now follow the
+     Cohere-inspired palette: near-black surfaces, hairline borders, restrained accents. */
+  --color-space-900: #0b0b0e;
+  --color-space-800: #17171c;
+  --color-space-700: #2b2b33;
+  --color-accent-cyan: #6cd3c3;
+  --color-accent-blue: #1863dc;
+
+  --color-ink: #212121;
+  --color-primary: #17171c;
+  --color-deep-green: #003c33;
+  --color-navy: #071829;
+  --color-soft-stone: #eeece7;
+  --color-hairline: #d9d9dd;
+  --color-muted: #93939f;
+  --color-slate: #75758a;
+  --color-coral: #ff7759;
+  --color-focus-blue: #4c6ee6;
+
+  --font-sans: 'Inter Variable', Inter, Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk Variable', 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #0B132B;
+  background-color: var(--color-space-900);
   color: white;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible keyboard focus everywhere (mouse clicks don't show it). */
+:focus-visible {
+  outline: 2px solid var(--color-focus-blue);
+  outline-offset: 2px;
 }
 
 /* Slim, theme-matched scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #3A506B transparent;
+  scrollbar-color: var(--color-space-700) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
@@ -30,32 +54,32 @@ html, body, #root {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #3A506B;
+  background-color: var(--color-space-700);
   border-radius: 9999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #5BC0BE;
+  background-color: var(--color-accent-cyan);
 }
 
 /* Dark-themed Leaflet controls to match the app shell */
 .leaflet-control-layers,
 .leaflet-bar {
-  background-color: #1C2541 !important;
-  border: 1px solid #3A506B !important;
-  border-radius: 0.75rem !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  background-color: var(--color-space-800) !important;
+  border: 1px solid var(--color-space-700) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
   overflow: hidden;
 }
 .leaflet-bar a {
-  background-color: #1C2541 !important;
+  background-color: var(--color-space-800) !important;
   color: #ffffff !important;
-  border-bottom: 1px solid #3A506B !important;
+  border-bottom: 1px solid var(--color-space-700) !important;
 }
 .leaflet-bar a:last-child {
   border-bottom: none !important;
 }
 .leaflet-bar a:hover {
-  background-color: #3A506B !important;
+  background-color: var(--color-space-700) !important;
 }
 .leaflet-control-layers-toggle {
   filter: invert(1);
@@ -66,22 +90,22 @@ html, body, #root {
    the app's dark one, or the icons disappear (dark-on-dark). */
 .leaflet-draw-toolbar a {
   background-color: #f4f4f4 !important;
-  border-bottom: 1px solid #3A506B !important;
+  border-bottom: 1px solid var(--color-space-700) !important;
 }
 .leaflet-draw-toolbar a:hover {
   background-color: #ffffff !important;
 }
 .leaflet-control-layers-expanded {
-  background-color: #1C2541 !important;
+  background-color: var(--color-space-800) !important;
   color: #ffffff !important;
   border-radius: 0.75rem !important;
   padding: 10px 12px !important;
 }
 .leaflet-control-attribution {
-  background-color: rgba(11, 19, 43, 0.7) !important;
+  background-color: rgba(11, 11, 14, 0.75) !important;
   color: #9ca3af !important;
   border-radius: 0.5rem 0 0 0 !important;
 }
 .leaflet-control-attribution a {
-  color: #5BC0BE !important;
+  color: var(--color-accent-cyan) !important;
 }

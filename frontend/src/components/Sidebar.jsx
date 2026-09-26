@@ -24,7 +24,7 @@ const Sidebar = ({
     landcoverWarning
 }) => {
     return (
-        <div className="w-1/4 h-full flex flex-col bg-space-800/95 backdrop-blur-xl text-white shadow-2xl border-r border-space-700/60 p-6 overflow-y-auto">
+        <div className="w-1/4 h-full flex flex-col bg-space-800/95 backdrop-blur-xl text-white border-r border-white/[0.07] p-6 overflow-y-auto">
             <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-gray-300">
                 <FiMapPin className="text-accent-cyan" /> Explore India
             </div>
@@ -62,7 +62,7 @@ const Sidebar = ({
                 <button
                     onClick={onExploreArea}
                     disabled={!selectedState || !selectedArea}
-                    className="w-full py-2.5 rounded-lg bg-accent-blue hover:bg-blue-600 disabled:bg-space-700 disabled:text-gray-500 disabled:cursor-not-allowed text-sm font-semibold transition-colors"
+                    className="w-full py-2.5 rounded-full bg-accent-blue hover:bg-focus-blue disabled:bg-space-700 disabled:text-gray-500 disabled:cursor-not-allowed text-sm font-semibold transition-colors"
                 >
                     Explore Area
                 </button>
@@ -75,7 +75,7 @@ const Sidebar = ({
                     </div>
                 )}
 
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Choose Analysis Query</h2>
+                <h2 className="font-mono text-xs font-normal uppercase tracking-[0.1em] text-muted mb-3">Choose Analysis Query</h2>
                 <div className="space-y-2">
                     {SUGGESTED_QUERIES.map(q => (
                         <button
@@ -95,7 +95,7 @@ const Sidebar = ({
                 <button
                     onClick={onAnalyze}
                     disabled={!canAnalyze}
-                    className={`w-full mt-4 py-2.5 rounded-lg font-semibold text-sm transition-colors ${canAnalyze ? 'bg-gradient-to-r from-accent-blue to-accent-cyan text-space-900 hover:opacity-90' : 'bg-space-700 text-gray-500 cursor-not-allowed'}`}
+                    className={`w-full mt-4 py-2.5 rounded-full font-medium text-sm transition-colors ${canAnalyze ? 'bg-white text-primary hover:bg-soft-stone' : 'bg-space-700 text-gray-500 cursor-not-allowed'}`}
                 >
                     ✨ Analyze
                 </button>
