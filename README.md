@@ -196,6 +196,8 @@ All thresholds are validated parameters (see `GET /api/tools`).
 
 Optional. Without these steps, captioning and VQA return `NOT_AVAILABLE` and everything else works.
 
+On Windows, keep the repo in a short path (e.g. `C:\dev\SatQuery-AI`). With long paths disabled, the default, `pip install torch` fails in deep folders.
+
 **Run this once after cloning** (after installing the ML packages below):
 
 ```powershell
