@@ -5,6 +5,7 @@ import { FiLayers, FiChevronDown } from 'react-icons/fi';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import MapAutoResize from './MapAutoResize';
+import ImageryDepthGuard from './ImageryDepthGuard';
 import { ESRI_IMAGERY_URL, imageryTileOptions } from '../upload/lib/mapTiles.js';
 
 const TABS = [
@@ -33,6 +34,8 @@ const MapComponent = ({ onGeometryChange, sentinelTileUrl, analysisTileUrl, anal
     const [activeTab, setActiveTab] = useState('satellite');
     const [opacity, setOpacity] = useState(70);
     const [layerMenuOpen, setLayerMenuOpen] = useState(false);
+    const imageryRef = useRef(null);
+    const [imageryCap, setImageryCap] = useState(null);   // deepest Esri level here, when the view is deeper
 
     // Jump straight to the freshly computed layer once an analysis finishes.
     useEffect(() => {
@@ -63,6 +66,11 @@ const MapComponent = ({ onGeometryChange, sentinelTileUrl, analysisTileUrl, anal
 
     return (
         <div className="relative h-full w-full">
+            {imageryCap !== null && baseLayer === 'satellite' && (
+                <div role="status" className="pointer-events-none absolute bottom-10 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-white/10 bg-space-900/85 px-3 py-1 text-xs text-gray-200 backdrop-blur-md">
+                    Sharper satellite imagery isn't available here; showing the most detailed there is (enlarged).
+                </div>
+            )}
             {/* Map controls: one row so the two clusters can never overlap/intercept each other's clicks */}
             <div className="absolute top-4 left-4 right-4 z-[1000] flex items-start justify-between gap-2 pointer-events-none">
                 <div className="pointer-events-auto flex items-center gap-1 p-1 rounded-xl bg-space-800/90 backdrop-blur-md border border-space-700/60 shadow-xl">
@@ -145,6 +153,10 @@ const MapComponent = ({ onGeometryChange, sentinelTileUrl, analysisTileUrl, anal
             >
                 <FlyToLocation location={flyToLocation} />
                 <MapAutoResize />
+                {baseLayer === 'satellite' && (
+                    <ImageryDepthGuard layerRef={imageryRef} onCapped={setImageryCap}
+                        baseMaxNativeZoom={imageryTileOptions(window.devicePixelRatio).maxNativeZoom} />
+                )}
                 <ZoomControl position="bottomright" />
                 <ScaleControl position="bottomleft" imperial={false} />
 
@@ -153,6 +165,7 @@ const MapComponent = ({ onGeometryChange, sentinelTileUrl, analysisTileUrl, anal
                         attribution="Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
                         url={ESRI_IMAGERY_URL}
                         {...imageryTileOptions(window.devicePixelRatio)}
+                        ref={imageryRef}
                     />
                 ) : (
                     <TileLayer

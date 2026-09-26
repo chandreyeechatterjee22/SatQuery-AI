@@ -8,7 +8,7 @@ import {
 } from './format.js';
 import { buildReportHtml, buildReportJson, escapeHtml, reportFilename } from './report.js';
 import { districtGroups } from './locations.js';
-import { imageryTileOptions } from './mapTiles.js';
+import { deepestAvailableLevel, imageryTileOptions, tileBlock, tileXY } from './mapTiles.js';
 import { readFileSync } from 'node:fs';
 
 const upload = {
@@ -214,6 +214,7 @@ test('imagery tiles: sharp on scaled displays without asking Esri beyond zoom 19
     const hi = imageryTileOptions(1.25);
     assert.equal(hi.detectRetina, true);
     assert.equal(hi.maxNativeZoom + 1, 19);   // retina asks for one level deeper
+    assert.equal(hi.maxZoom - 1, 21);         // Leaflet lowers it by one; must still reach the maps' zoom 21
 });
 
 test('map background override is outside any CSS layer (so it beats leaflet.css #ddd)', () => {
@@ -223,4 +224,24 @@ test('map background override is outside any CSS layer (so it beats leaflet.css 
     const before = css.slice(0, rule.index);
     const opened = (before.match(/@layer[^{;]*\{/g) || []).length;
     assert.equal(opened, 0, 'rule must not sit inside an @layer block');
+});
+
+test('tile maths matches Esri/Web-Mercator tiles', () => {
+    assert.deepEqual(tileXY(16.3, 75.0, 19), { x: 371370, y: 238078 });   // same tile the server check used
+    const blk = tileBlock([75.0, 16.29, 75.02, 16.3], 19);
+    assert.ok(blk.w >= 1 && blk.w <= 8 && blk.h >= 1 && blk.h <= 8);
+    const big = tileBlock([70, 10, 80, 20], 19);
+    assert.equal(big.w, 8); assert.equal(big.h, 8);
+});
+
+test('deepest imagery level: stops at the first level where every tile has data', async () => {
+    const have = { 19: [1, 0, 1, 1], 18: [1, 1, 1, 1] };           // rural spot: no z19 for one tile
+    const asked = [];
+    const fetchBlock = async (z) => { asked.push(z); return have[z] ?? [1]; };
+    assert.equal(await deepestAvailableLevel([75, 16.2, 75.1, 16.3], 19, fetchBlock), 18);
+    assert.deepEqual(asked, [19, 18]);
+    assert.equal(await deepestAvailableLevel([0, 0, 1, 1], 19, async () => [1, 1]), 19);
+    assert.equal(await deepestAvailableLevel([0, 0, 1, 1], 19, async () => [0]), 16);     // floor
+    assert.equal(await deepestAvailableLevel([0, 0, 1, 1], 16, async () => { throw new Error('x'); }), 16);
+    assert.equal(await deepestAvailableLevel([0, 0, 1, 1], 19, async () => { throw new Error('offline'); }), 19);
 });
