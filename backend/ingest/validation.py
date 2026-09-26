@@ -6,7 +6,7 @@ everything in one go. Rejection reasons carry a stable ``code`` for the UI.
 from datetime import date
 from pathlib import Path
 
-from raster.band_adapter import BandAdapterError, resolve_bands
+from raster.band_adapter import BandAdapterError, parse_band_roles, resolve_bands
 from raster.metadata import GEOTIFF_DRIVER, IMAGE_DRIVERS, RasterReadError, read_metadata
 
 MODES = {"single": 1, "optical_sar": 2, "bi_temporal": 2}
@@ -23,16 +23,20 @@ def reason(code, message, slot=None):
     return r
 
 
-def validate_upload(mode, files, dates=None, sensors=None, benchmark_mode=False, today=None):
+def validate_upload(mode, files, dates=None, sensors=None, benchmark_mode=False, today=None,
+                    band_roles=None):
     """Validate an upload.
 
     ``files`` is a list of ``(original_filename, path_on_disk)``; ``dates`` and
     ``sensors`` are lists aligned with ``files`` (entries may be None).
+    ``band_roles`` is also aligned: comma-separated role strings such as
+    "blue,green,red,nir,swir1" (or None).
     Returns ``{"ok", "reasons", "warnings", "files", "pair"}``.
     """
     reasons, warnings = [], []
     dates = list(dates or [])
     sensors = list(sensors or [])
+    band_roles = list(band_roles or [])
 
     if mode not in MODES:
         return _result([reason("invalid_mode",
@@ -48,8 +52,9 @@ def validate_upload(mode, files, dates=None, sensors=None, benchmark_mode=False,
     for i, (filename, path) in enumerate(files):
         slot = i + 1
         sensor = sensors[i] if i < len(sensors) and sensors[i] else "auto"
+        roles = parse_band_roles(band_roles[i]) if i < len(band_roles) else None
         info = _check_file(slot, filename, path, sensor, SLOT_KINDS[mode][i],
-                           benchmark_mode, reasons, warnings)
+                           benchmark_mode, reasons, warnings, roles)
         if info is not None:
             info["date"] = parsed_dates[i].isoformat() if parsed_dates[i] else None
             described.append(info)
@@ -95,7 +100,8 @@ def _check_dates(mode, dates, expected, today, reasons):
     return parsed
 
 
-def _check_file(slot, filename, path, sensor, expected_kind, benchmark_mode, reasons, warnings):
+def _check_file(slot, filename, path, sensor, expected_kind, benchmark_mode, reasons, warnings,
+                band_roles=None):
     ext = Path(filename or "").suffix.lower()
     if ext in IMAGE_EXTS and not benchmark_mode:
         reasons.append(reason("image_requires_benchmark_mode",
@@ -128,9 +134,14 @@ def _check_file(slot, filename, path, sensor, expected_kind, benchmark_mode, rea
         return None
 
     try:
-        bands = resolve_bands(meta, sensor=sensor, expected_kind=expected_kind)
+        bands = resolve_bands(meta, sensor=sensor, expected_kind=expected_kind, band_roles=band_roles)
     except BandAdapterError as exc:
-        code = "wrong_modality" if expected_kind == "sar" and sensor == "auto" else "sensor_mismatch"
+        if band_roles is not None:
+            code = "invalid_band_roles"
+        elif expected_kind == "sar" and sensor == "auto":
+            code = "wrong_modality"
+        else:
+            code = "sensor_mismatch"
         prefix = "must be the SAR image; " if code == "wrong_modality" else ""
         reasons.append(reason(code, f"File {slot} ({filename}) {prefix}{exc}.", slot))
         return None

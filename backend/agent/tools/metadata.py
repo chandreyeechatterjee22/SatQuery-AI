@@ -23,7 +23,8 @@ _FIELD_PATTERNS = {
 
 _SENSOR_LABELS = {
     "sentinel2": "Sentinel-2", "cartosat2s": "Cartosat-2S MX", "bgrn": "4-band blue/green/red/NIR",
-    "rgb": "RGB", "sar": "SAR", "described": "from band descriptions", "unknown": "unknown",
+    "rgb": "RGB", "sar": "SAR", "described": "from band descriptions", "user": "user-specified band roles",
+    "unknown": "unknown",
 }
 
 
@@ -65,7 +66,7 @@ def _describe(f, fields):
     for field in fields:
         if field == "bands":
             roles = ", ".join(f"{role}=band {i}" for role, i in bands["roles"].items()) or "no roles"
-            inferred = "" if bands["source"] in ("descriptions", "sensor_hint") else " (inferred from band count)"
+            inferred = "" if bands["source"] in ("descriptions", "sensor_hint", "user_roles") else " (inferred from band count)"
             parts.append(f"{meta['band_count']} band(s), {roles}{inferred}")
         elif field == "dtype":
             parts.append("data type " + "/".join(sorted(set(meta["dtypes"]))))
