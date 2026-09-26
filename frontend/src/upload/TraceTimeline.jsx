@@ -18,7 +18,7 @@ const TraceTimeline = ({ trace }) => {
                 <Fact label="Tool" value={trace.tool ? `${trace.tool} ${trace.tool_version}` : '-'} />
                 <Fact label="Status" value={trace.status} />
                 <Fact label="Duration" value={formatMs(trace.duration_ms)} />
-                <Fact label="Inputs" value={(trace.inputs || []).map((i) => `${i.role || i.kind} ${i.filename}`).join(', ') || '-'} />
+                <Fact label="Inputs" value={(trace.inputs || []).map((i) => `${i.role || i.kind}: ${i.filename}`).join(', ') || '-'} />
                 <Fact label="Params" value={JSON.stringify(trace.params || {})} mono />
             </dl>
             <ol className="relative space-y-2 border-l border-space-700 pl-4">

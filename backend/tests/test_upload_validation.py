@@ -298,3 +298,23 @@ def test_webp_named_jpg_is_accepted_as_photo_with_warning(tmp_path):
     assert any("is actually WEBP; read as a photo" in w for w in res["warnings"])
     # Without benchmark (photo) mode it is still rejected with a clear reason.
     assert codes(run("single", [("download.jpg", path)])) == ["image_requires_benchmark_mode"]
+
+
+def test_files_without_extension_are_identified_by_content(tmp_path):
+    import shutil
+
+    tif = make_geotiff(tmp_path / "scene.tif", count=4)
+    shutil.copyfile(tif, tmp_path / "scene")
+    res = run("single", [("scene", tmp_path / "scene")])
+    assert res["ok"], res["reasons"]
+    assert any("no file extension; detected GTiff" in w for w in res["warnings"])
+
+    png = make_png(tmp_path / "photo.png")
+    shutil.copyfile(png, tmp_path / "photo")
+    assert codes(run("single", [("photo", tmp_path / "photo")])) == ["image_requires_benchmark_mode"]
+    res = run("single", [("photo", tmp_path / "photo")], benchmark_mode=True)
+    assert res["ok"] and any("detected PNG" in w for w in res["warnings"])
+
+    junk = tmp_path / "notes"
+    junk.write_bytes(b"hello")
+    assert codes(run("single", [("notes", junk)])) == ["unreadable_raster"]

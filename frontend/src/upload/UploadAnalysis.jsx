@@ -25,6 +25,9 @@ const UploadAnalysis = () => {
         setBusy('upload');
         setError('');
         setResult(null);
+        // Drop the previous upload right away so its panel and chips can't be used while the new one runs.
+        setValidation(null);
+        setUpload(null);
         try {
             const res = await createUpload(form);
             setValidation(res);
@@ -64,7 +67,7 @@ const UploadAnalysis = () => {
             <div className="space-y-4 min-w-0">
                 <div className="rounded-2xl border border-space-700/60 bg-space-800/80 p-4 shadow-xl">
                     <h2 className="mb-3 text-base font-semibold text-white">Ask a question</h2>
-                    <QuestionBox mode={upload?.mode || 'single'} disabled={!upload} busy={busy === 'query'} onAsk={handleAsk} />
+                    <QuestionBox mode={upload?.mode || 'single'} disabled={!upload || busy === 'upload'} busy={busy === 'query'} onAsk={handleAsk} />
                 </div>
 
                 {error && (
