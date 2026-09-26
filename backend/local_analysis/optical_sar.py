@@ -74,7 +74,7 @@ def _sar_layers(sar_path, roles, grid, params, warnings):
     pol, index = _sar_band(roles)
     if pol is None:
         warnings.append("SAR image has no recognised polarisation band; SAR is not used.")
-        return np.ones(grid.shape, dtype=bool), None, None, None
+        return np.ones(grid.shape, dtype=bool), None, None, None, None
     values = read_on_grid(sar_path, [index], grid)[0]
     db, was_linear, calibrated = sar_to_db(values)
     if not calibrated:
@@ -84,7 +84,7 @@ def _sar_layers(sar_path, roles, grid, params, warnings):
     band = f"{pol.upper()}{' (linear, converted to dB)' if was_linear else ' (dB)'}"
     water = (db < params["sar_water_db"]) & valid
     built = (db > params["sar_builtup_db"]) & valid
-    return valid, water, built, band
+    return valid, water, built, band, calibrated
 
 
 def map_water_builtup(optical_path, optical_bands, sar_path, sar_bands, params=None, classes=CLASSES):
@@ -94,7 +94,7 @@ def map_water_builtup(optical_path, optical_bands, sar_path, sar_bands, params=N
     grid = grid_for(optical_path, params["max_size"])
     opt_valid, opt_water, water_method, opt_built, built_method = _optical_layers(
         optical_path, optical_bands["roles"], grid, params, warnings)
-    sar_valid, sar_water, sar_built, sar_band = _sar_layers(
+    sar_valid, sar_water, sar_built, sar_band, sar_calibrated = _sar_layers(
         sar_path, sar_bands["roles"], grid, params, warnings)
 
     valid = opt_valid & sar_valid
@@ -122,6 +122,7 @@ def map_water_builtup(optical_path, optical_bands, sar_path, sar_bands, params=N
         "stats": stats,
         "masks": masks,
         "valid_pixels": n_valid,
+        "sar_calibrated": sar_calibrated,
         "valid_area_km2": _round(area_km2(valid, pixel_area), 4),
         "methods": {"optical_water": water_method, "optical_built_up": built_method,
                     "sar_band": sar_band, "fusion": params["fusion"],
