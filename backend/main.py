@@ -93,6 +93,11 @@ def dict_to_ee_geometry(geom_dict: Dict[str, Any]) -> ee.Geometry:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid geometry format: {e}")
 
+NO_IMAGERY_12M = ("No cloud-masked Sentinel-2 imagery (with Cloud Score+) is available for this area in the "
+                  "last 12 months. Try a larger or different area.")
+NO_IMAGERY_90D = ("No cloud-masked Sentinel-2 imagery (with Cloud Score+) is available for this area in the "
+                  "last 90 days, so the analysis cannot run. Try a larger or different area.")
+
 @app.post("/api/sentinel")
 def get_sentinel_info(request: AOIRequest):
     aoi = dict_to_ee_geometry(request.geometry)
@@ -116,6 +121,8 @@ def get_sentinel_info(request: AOIRequest):
     # Check if there are images
     count = recent_col.size().getInfo()
     if count == 0:
+        if s2_col.size().getInfo() == 0:
+            raise HTTPException(status_code=422, detail=NO_IMAGERY_12M)
         # Fallback to whole year
         recent_col = s2_col
         period_str = f"{start_date_str} to {end_date_str}"
@@ -164,8 +171,9 @@ def run_analysis(request: AnalyzeRequest):
     # Using 3 month composite as baseline for analysis
     recent_col = s2_col.filterDate((end_date - timedelta(days=90)).strftime('%Y-%m-%d'), end_date_str)
     
-    # Need to handle empty collection case appropriately in production
-    
+    if recent_col.size().getInfo() == 0:
+        raise HTTPException(status_code=422, detail=NO_IMAGERY_90D)
+
     s2_image = recent_col.median().clip(aoi)
     period_str = f"{(end_date - timedelta(days=90)).strftime('%Y-%m-%d')} to {end_date_str}"
     

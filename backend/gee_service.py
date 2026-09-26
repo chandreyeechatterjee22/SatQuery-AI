@@ -43,6 +43,8 @@ def get_s2_sr_cld_col(aoi, start_date, end_date):
     # Filter collections by time and AOI
     s2_filtered = s2Sr.filterBounds(aoi).filterDate(start_date, end_date)
     cs_filtered = csPlus.filterBounds(aoi).filterDate(start_date, end_date)
+    # Keep only scenes that already have a Cloud Score+ image (it lags new scenes by days).
+    s2_filtered = s2_filtered.filter(ee.Filter.inList('system:index', cs_filtered.aggregate_array('system:index')))
 
     # Link collections
     def link_cs(img):
