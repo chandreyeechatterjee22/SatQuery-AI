@@ -2,7 +2,7 @@
 
 ## Project
 - FastAPI backend in `/backend`, React + Vite + Tailwind frontend in `/frontend`, ML code in `/ml`.
-- The existing Earth Engine flow (Sentinel-2 NDVI/NDWI/flood on a map-drawn AOI: `/api/sentinel`, `/api/analyze`, `gee_service.py`, `analysis/`, `intent.py`, map UI) **stays as-is. Do not delete or change it.**
+- The existing Earth Engine flow (Sentinel-2 NDVI/NDWI/flood on a map-drawn AOI: `/api/sentinel`, `/api/analyze`, `gee_service.py`, `analysis/`, `intent.py`, map UI) **stays as-is. Do not delete or change it.** Exception: genuine bug fixes to the Earth Engine flow are allowed if they are minimal and come with an offline regression test (e.g. `fix/gee-cloudscore-join`).
 - We are adding a new **upload-based agentic flow** alongside it: the user uploads satellite image(s) and asks a natural-language question. The backend picks a tool, runs it, and returns answer + confidence + evidence images + execution trace.
 
 ## Scope: build only these 6 things
