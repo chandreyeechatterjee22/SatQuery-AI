@@ -15,10 +15,10 @@ pip install -r backend\requirements.txt
 # Optional ML stack. Without it, captioning / VQA / the land-cover model report NOT_AVAILABLE.
 pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu
 pip install -r backend\requirements-ml.txt
-python backend\scripts\download_remoteclip.py          # RemoteCLIP ViT-B/32 weights (~605 MB)
-# Trained heads (not in git): ml\vqa_head\train.py and ml\landcover_patch\train.py,
-# or copy the .pt files into data\models\vqa_head\ and data\models\landcover_patch\.
-cd frontend; npm install; cd ..
+# Run this once after cloning: downloads the trained heads (GitHub release v1.0-prototype)
+# and RemoteCLIP (Hugging Face, ~605 MB) into data\models\ and checks SHA256 checksums.
+powershell -ExecutionPolicy Bypass -File scripts\download_models.ps1
+cd frontend; npm ci; cd ..
 ```
 
 Run, in two terminals:

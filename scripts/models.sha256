@@ -1,0 +1,3 @@
+26813fdddcc2a1db9397102bd5ce7c57c0418389ab992c4c0e57e93462416eb4  data/models/vqa_head/rsvqa_lr_head.pt
+ef0752d0ec4d03ec0e396bf07cfe50751495cdcb81774f7b8b92ab7601756da8  data/models/landcover_patch/resnet18_4band_ben.pt
+60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4  data/models/remoteclip/RemoteCLIP-ViT-B-32.pt
