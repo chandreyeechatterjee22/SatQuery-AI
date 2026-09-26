@@ -4,6 +4,8 @@ import { EditControl } from 'react-leaflet-draw';
 import { FiLayers, FiChevronDown } from 'react-icons/fi';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
+import MapAutoResize from './MapAutoResize';
+import { ESRI_IMAGERY_URL, imageryTileOptions } from '../upload/lib/mapTiles.js';
 
 const TABS = [
     { key: 'satellite', label: 'Satellite' },
@@ -142,15 +144,15 @@ const MapComponent = ({ onGeometryChange, sentinelTileUrl, analysisTileUrl, anal
                 zoomControl={false}
             >
                 <FlyToLocation location={flyToLocation} />
+                <MapAutoResize />
                 <ZoomControl position="bottomright" />
                 <ScaleControl position="bottomleft" imperial={false} />
 
                 {baseLayer === 'satellite' ? (
                     <TileLayer
                         attribution="Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
-                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                        maxZoom={21}
-                        maxNativeZoom={19}
+                        url={ESRI_IMAGERY_URL}
+                        {...imageryTileOptions(window.devicePixelRatio)}
                     />
                 ) : (
                     <TileLayer
