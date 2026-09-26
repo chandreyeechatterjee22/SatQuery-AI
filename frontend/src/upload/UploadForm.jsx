@@ -15,8 +15,9 @@ const UploadForm = ({ onSubmit, busy }) => {
     const [advanced, setAdvanced] = useState(false);
 
     const spec = MODES[mode];
-    const problems = uploadProblems(mode, files, dates);
-    const accept = benchmark ? '.tif,.tiff,.png,.jpg,.jpeg' : '.tif,.tiff';
+    const problems = uploadProblems(mode, files, dates, benchmark);
+    // Always list PNG/JPEG too: filtering them out made folders of photos look empty in the Windows picker.
+    const accept = '.tif,.tiff,.png,.jpg,.jpeg';
 
     const changeMode = (m) => {
         setMode(m);
@@ -43,6 +44,7 @@ const UploadForm = ({ onSubmit, busy }) => {
         <form onSubmit={submit} className="space-y-4">
             <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">1. Mode</p>
+                <p className="mb-2 text-xs text-gray-500">GeoTIFF (.tif) images. Ready-made demo files are in the repo's <code>samples</code> folder (see docs/DEMO.md).</p>
                 <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Upload mode">
                     {Object.entries(MODES).map(([key, m]) => (
                         <button key={key} type="button" role="radio" aria-checked={mode === key}
