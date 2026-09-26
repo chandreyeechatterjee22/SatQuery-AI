@@ -84,6 +84,7 @@ The pytest suite needs no network or Earth Engine credentials.
 | `file_1`, `file_2` | GeoTIFF (`.tif`/`.tiff`); PNG/JPEG only with `benchmark_mode=true` |
 | `date_1`, `date_2` | `YYYY-MM-DD`; required and different for `bi_temporal` |
 | `sensor_1`, `sensor_2` | Optional: `auto` (default), `sentinel2`, `cartosat2s`, `bgrn`, `rgb`, `sar` |
+| `band_roles_1`, `band_roles_2` | Optional explicit role per band, e.g. `blue,green,red,nir,swir1` or `vv,vh` (`-` ignores a band). Use this for Earth Engine exports, which drop band names. |
 | `benchmark_mode` | `true` to allow PNG/JPEG |
 
 Returns `201` with the upload id, per-file metadata (bands, dtype, CRS, bounds, resolution), band roles, pair checks and warnings; `422` with every rejection reason (`{code, message, file}`); or `413` if a file is too large. `GET /api/uploads/{upload_id}` returns the stored manifest.
@@ -103,7 +104,7 @@ Pipeline: classify the question (rules, then a typo-tolerant keyword fallback) -
 | metadata (bands, CRS, resolution, size, extent, dates) | all | `image_metadata` | available |
 | caption | single | `rs_caption` | RemoteCLIP zero-shot scene labels (needs the ML install) |
 | vqa | single | `rs_vqa` | trained RSVQA-LR head if present, else zero-shot RemoteCLIP (presence, rural/urban) |
-| water / built-up | optical_sar | `optical_sar_mapper` | `NOT_AVAILABLE` (not built yet) |
+| water / built-up | optical_sar | `optical_sar_mapper` | available (numpy/rasterio, no model) |
 | change | bi_temporal | `landcover_change` | `NOT_AVAILABLE` (not built yet) |
 
 The response has `status` (`OK`, `NOT_AVAILABLE`, `REJECTED`, `ERROR`), `answer`, `confidence` (task-classification confidence x tool confidence), `evidence_images` (URLs relative to the API host) and `trace` (task, tool + version, params, inputs, duration, status and per-step timings). `GET /api/tools` lists the registered tools.
@@ -112,6 +113,22 @@ The response has `status` (`OK`, `NOT_AVAILABLE`, `REJECTED`, `ERROR`), `answer`
 $body = @{ upload_id = "<id from /api/uploads>"; question = "How many bands does this image have?" } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/query -ContentType "application/json" -Body $body
 ```
+
+## Optical + SAR water / built-up
+
+`optical_sar_mapper` warps the SAR image onto the optical grid (downsampled to at most `max_size` px) and uses only pixels valid in both.
+
+| Class | Optical signal | SAR signal (VV, else HH; linear converted to dB) |
+|---|---|---|
+| water | MNDWI (green, SWIR1), or NDWI (green, NIR) without SWIR, `> optical_water_threshold` (0) | `< sar_water_db` (-18 dB) |
+| built-up | NDBI (SWIR1, NIR) `> optical_builtup_threshold` (0), or a labelled low-NDVI proxy (`< 0.2`) without SWIR | `> sar_builtup_db` (-6 dB) |
+
+- **Fusion:** `and` (default) means both modalities must agree; `or` accepts either one. Built-up never overlaps the final water mask.
+- **Output per class:** area % and km² (when the CRS allows it), the % flagged by optical only, SAR only and both, and an RGBA overlay coloured by those three groups.
+- **Confidence:** modality agreement, i.e. pixels both modalities flag ÷ pixels either flags. It is a consensus measure, not a calibrated probability, and it is `null` if one modality lacks the needed bands.
+- **Uncalibrated SAR:** values that don't look like calibrated sigma0 in dB are flagged in `warnings`.
+
+All thresholds are validated parameters (see `GET /api/tools`).
 
 ## Local models (captioning and VQA)
 
