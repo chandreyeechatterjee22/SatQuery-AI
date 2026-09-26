@@ -55,12 +55,84 @@ In the UI, open **Advanced** in the upload form to enter band roles (see `sample
 **Bonus, inline rejection:** optical + SAR with `sarjapur_s2_2021q1.tif` + `bellandur_s1_2024q1.tif`
 gives "Upload rejected: `no_overlap` The two files do not overlap geographically (...)".
 
+The table shows the technical results. In the UI the **plain-language answer** comes first (see below);
+the technical answer, raw numbers and trace are under **Technical details** (closed by default).
+
 What to show in each scenario:
-- the answer card: status, answer, confidence and what it means
+- the answer card: large headline, "what it means", key numbers, a coloured confidence badge
+  (green High / amber Medium / red Low) with its reason, caveats in a soft warning box, and a clickable
+  next question
 - the image viewer: overlay on/off, opacity
-- the execution trace: task, tool + version, params, inputs, per-step timing; for scenarios 4-5 the
-  `landcover_model` entry with model name, version and bands
-- **Report (JSON)** and **Report (HTML)** (self-contained, images embedded)
+- **Technical details**: the full technical answer and confidence basis, **Raw numbers**, and the execution
+  trace (task, tool + version, params, inputs, per-step timing; for scenarios 4-5 the `landcover_model`
+  entry with model name, version and bands)
+- **Report (JSON)** and **Report (HTML)** (self-contained, images embedded): plain answer at the top,
+  technical details below
+
+### What the plain-language answers say
+
+They are filled in from templates (no language model), using only the tool's own numbers and direction
+words. High / Medium / Low comes from the numeric confidence (`PLAIN_CONFIDENCE_HIGH` = 0.75,
+`PLAIN_CONFIDENCE_MEDIUM` = 0.4 in `backend/.env`).
+
+| # | Headline | Confidence badge |
+|---|---|---|
+| 1 | This looks like an urban area (a town or city). | High — the model gave this answer a 99% chance. |
+| 1 | *Describe this image*: This looks like an airport. | Medium — the best match got only 43%, so other kinds of place are also possible. |
+| 2 | Here are the basic facts about your image. (Layers: 5 (blue, green, red, near-infrared, short-wave infrared light); Each pixel covers: 10 × 10 m on the ground) | High — these facts are read straight from the file. |
+| 3 | About 4.2% of the area is water and 14.3% of the area is built-up (buildings and roads). | Medium — the radar and the normal image agree on only 21% of the built-up spots they found. |
+| 4 | Yes — the built-up area has increased. | High — the result stays the same when we adjust our detection settings, and both methods agree. |
+| 5 | The built-up area probably increased, but our two methods disagree. | Low — the two methods we used don't agree. |
+
+Scenario 4 (Sarjapur, 2021 → 2025) in full:
+
+> **Yes — the built-up area has increased.**
+>
+> Between 15 Feb 2021 and 15 Feb 2025, more of this area became buildings and roads. About 31.9% of the
+> area was built-up before; now it's about 43.1%. Our AI model sees the scene as more city-like on
+> 15 Feb 2025 than on 15 Feb 2021 (68 → 94 out of 100).
+>
+> Key numbers
+> - Built-up: 31.87% → 43.07% of the area (4.73 km² → 6.39 km²)
+> - How city-like the scene looks to our AI model: 68 → 94 out of 100
+> - Area compared: 14.84 km²
+>
+> **High confidence** — the result stays the same when we adjust our detection settings, and both methods agree.
+>
+> How we know: We compared the satellite images from both dates and sorted every spot into water, plants,
+> buildings and roads, or other land, based on how each surface reflects different colours of light. For
+> buildings we also asked an AI model, trained on thousands of labelled satellite images, how city-like
+> each image looks.
+>
+> Next, you could ask: *What changed?*
+
+Scenario 3 (Bellandur optical + SAR) in full:
+
+> **About 4.2% of the area is water and 14.3% of the area is built-up (buildings and roads).**
+>
+> We looked for water and built-up (buildings and roads) in the 14.79 km² both images cover. Water covers
+> 0.62 km² (about 4.2%). Built-up covers 2.11 km² (about 14.3%). A spot only counts when both the normal
+> image and the radar image agree.
+>
+> Key numbers
+> - Water: 4.22% of the area (0.62 km²)
+> - Built-up: 14.27% of the area (2.11 km²)
+> - Water found by the normal image 6.08%, by radar 4.44%, by both 4.22%
+> - Built-up found by the normal image 62.54%, by radar 19.78%, by both 14.27%
+>
+> **Medium confidence** — the radar and the normal image agree on only 21% of the built-up spots they found.
+>
+> How we know: We used two kinds of satellite image: a normal (optical) image that records sunlight
+> reflected from the ground, and a radar (SAR) image that records how the surface bounces back radar
+> signals. Calm water looks dark to radar; buildings reflect radar strongly, and the normal image adds
+> colour clues.
+
+Scenario 5 adds the caveat *"The two images differ in how green the land is (for example a dry year versus
+a wet year). Dry bare fields can look like buildings, so some of this change may be season or rainfall
+rather than real change. Images from the same season give a fairer comparison."* Answers that cannot be
+given (NOT_AVAILABLE) say in plain words what went wrong and what to do next, for example *"The radar
+image is an ordinary picture, not real radar measurements ..."* followed by *"Upload a real Sentinel-1
+radar file (GeoTIFF), or use 'Fetch from Earth Engine' ..."*.
 
 **Scenario 6: Fetch from Earth Engine** (needs Earth Engine auth, the same as the Map Analysis tab):
 1. In **Upload Analysis**, open **Fetch from Earth Engine**, choose **Optical + SAR**, pick **Draw rectangle** and
@@ -86,11 +158,13 @@ python -m app.predict --input ..\samples\manifest.json --out ..\predictions.json
 
 Expected status counts: `{'OK': 6, 'REJECTED': 1}`. The short answers are `urban`, the caption, the
 metadata text, the water/built-up text, `increased`, `increased`, and `no_overlap` for the rejection.
+The CLI keeps these short canonical answers for benchmark scoring; it does not include the
+plain-language answers.
 
 ## 4. Tests
 
 ```powershell
-cd backend; pytest                                   # 376 tests
+cd backend; pytest                                   # 431 tests
 cd ..\ml\vqa_head; ..\..\.venv\Scripts\python.exe -m pytest
 cd ..\landcover_patch; ..\..\.venv\Scripts\python.exe -m pytest
 cd ..\..\frontend; npm test
