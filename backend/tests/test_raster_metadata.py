@@ -68,3 +68,13 @@ def test_garbage_file_raises(tmp_path):
     bad.write_bytes(b"this is not a tiff")
     with pytest.raises(RasterReadError, match="not a readable raster"):
         read_metadata(bad)
+
+
+@pytest.mark.parametrize("nodata, expected", [(float("-inf"), "-inf"), (float("nan"), "nan"),
+                                              (float("inf"), "inf"), (0.0, 0.0)])
+def test_non_finite_nodata_is_json_safe(tmp_path, nodata, expected):
+    import json
+
+    meta = read_metadata(make_geotiff(tmp_path / "x.tif", count=1, dtype="float32", nodata=nodata))
+    assert meta["nodata"] == expected
+    json.dumps(meta, allow_nan=False)  # must not raise

@@ -185,3 +185,14 @@ def test_no_common_valid_pixels_raises(tmp_path):
     with pytest.raises(ValueError, match="no valid pixels in common"):
         map_water_builtup(opt, resolve_bands(read_metadata(opt)), sp,
                           resolve_bands(read_metadata(sp), expected_kind="sar"))
+
+
+def test_minus_inf_nodata_like_earth_engine_exports(tmp_path):
+    optical, sar = optical_sar_scene()
+    sar = sar.copy()
+    sar[0, :, :4] = -np.inf
+    opt = make_geotiff(tmp_path / "o.tif", count=4, data=optical)
+    sp = make_geotiff(tmp_path / "s.tif", count=1, dtype="float32", data=sar, nodata=float("-inf"))
+    res = map_water_builtup(opt, resolve_bands(read_metadata(opt)), sp,
+                            resolve_bands(read_metadata(sp), expected_kind="sar"))
+    assert res["valid_pixels"] == 32

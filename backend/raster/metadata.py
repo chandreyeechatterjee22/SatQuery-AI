@@ -1,4 +1,5 @@
 """Read raster metadata with rasterio, independent of sensor or band count."""
+import math
 import warnings
 from pathlib import Path
 
@@ -39,7 +40,7 @@ def _describe(src):
         "height": src.height,
         "band_count": src.count,
         "dtypes": list(src.dtypes),
-        "nodata": src.nodata,
+        "nodata": _json_number(src.nodata),
         "band_descriptions": [d or None for d in src.descriptions],
         "crs": crs.to_string() if crs else None,
         "epsg": crs.to_epsg() if crs else None,
@@ -48,6 +49,13 @@ def _describe(src):
         "resolution": {"x": abs(res_x), "y": abs(res_y), "units": _units(crs)},
         "georeferenced": georeferenced,
     }
+
+
+def _json_number(value):
+    """JSON cannot hold NaN/inf (e.g. Earth Engine exports use nodata=-inf); keep them as strings."""
+    if value is None or math.isfinite(value):
+        return value
+    return "nan" if math.isnan(value) else ("inf" if value > 0 else "-inf")
 
 
 def _units(crs):
