@@ -5,7 +5,8 @@ from agent.context import UploadContext
 from agent.params import validate_params
 from agent.registry import PlaceholderTool, Registry, Tool, default_registry
 from agent.tools.metadata import FIELDS, MetadataTool
-from agent.tools.placeholders import ChangePlaceholder, classes_in
+from agent.tools.change import ChangeTool
+from agent.tools.question_classes import classes_in
 
 
 def test_default_registry_covers_every_task():
@@ -22,7 +23,7 @@ def test_availability_without_model_weights():
     # Tests run without weights (see conftest): CLIP tools are unavailable, numpy tools are not.
     available = {t.task: t.availability()[0] for t in default_registry().all()}
     assert available == {tasks.METADATA: True, tasks.CAPTION: False, tasks.VQA: False,
-                         tasks.WATER_BUILTUP: True, tasks.CHANGE: False}
+                         tasks.WATER_BUILTUP: True, tasks.CHANGE: True}
 
 
 def test_registry_rejects_duplicate_task():
@@ -33,10 +34,12 @@ def test_registry_rejects_duplicate_task():
 
 
 def test_placeholder_reports_reason():
-    ok, reason = ChangePlaceholder().availability()
-    assert ok is False and "not available" in reason
+    class Later(PlaceholderTool):
+        unavailable_reason = "Coming later."
+    ok, reason = Later().availability()
+    assert ok is False and reason == "Coming later."
     with pytest.raises(RuntimeError):
-        PlaceholderTool().run(None, {}, "q")
+        Later().run(None, {}, "q")
 
 
 @pytest.mark.parametrize("question, allowed, expected", [
@@ -51,8 +54,8 @@ def test_classes_in(question, allowed, expected):
     assert classes_in(question, allowed) == expected
 
 
-def test_change_placeholder_extracts_classes():
-    assert ChangePlaceholder().extract_params("Has built-up increased?", None) == {"classes": ["built_up"]}
+def test_change_tool_extracts_classes():
+    assert ChangeTool().extract_params("Has built-up increased?", None) == {"classes": ["built_up"]}
 
 
 # --- metadata tool --------------------------------------------------------

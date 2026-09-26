@@ -7,7 +7,7 @@ calibrated probability, and is None when only one modality could be used.
 from agent import tasks
 from agent.registry import Tool, ToolResult
 from agent.tools.clip_common import preview_evidence
-from agent.tools.placeholders import classes_in
+from agent.tools.question_classes import classes_in
 from local_analysis import optical_sar
 from local_analysis.optical_sar import CLASS_LABELS, CLASSES, DEFAULTS
 from local_analysis.overlays import render_overlay

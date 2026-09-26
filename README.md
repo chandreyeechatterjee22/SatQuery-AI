@@ -105,7 +105,7 @@ Pipeline: classify the question (rules, then a typo-tolerant keyword fallback) -
 | caption | single | `rs_caption` | RemoteCLIP zero-shot scene labels (needs the ML install) |
 | vqa | single | `rs_vqa` | trained RSVQA-LR head if present, else zero-shot RemoteCLIP (presence, rural/urban) |
 | water / built-up | optical_sar | `optical_sar_mapper` | available (numpy/rasterio, no model) |
-| change | bi_temporal | `landcover_change` | `NOT_AVAILABLE` (not built yet) |
+| change | bi_temporal | `landcover_change` | available (numpy/rasterio, no model) |
 
 The response has `status` (`OK`, `NOT_AVAILABLE`, `REJECTED`, `ERROR`), `answer`, `confidence` (task-classification confidence x tool confidence), `evidence_images` (URLs relative to the API host) and `trace` (task, tool + version, params, inputs, duration, status and per-step timings). `GET /api/tools` lists the registered tools.
 
@@ -129,6 +129,27 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/query -ContentType
 - **Uncalibrated SAR:** values that don't look like calibrated sigma0 in dB are flagged in `warnings`.
 
 All thresholds are validated parameters (see `GET /api/tools`).
+
+## Bi-temporal land-cover change
+
+`landcover_change` sorts the two files by date (earlier = before), puts both on the earlier grid and compares only pixels valid on both dates. It uses only the bands present on both dates.
+
+| Class | Rule (in order) |
+|---|---|
+| water | MNDWI (green, SWIR1), or NDWI (green, NIR) without SWIR, `> water_threshold` (0) |
+| vegetation | NDVI `> vegetation_ndvi` (0.3) |
+| built-up | NDBI `> builtup_threshold` (0), or NDVI `< ndvi_max_builtup` (0.2) without SWIR (flagged in the answer) |
+| other | everything else |
+
+- **Per class:** % and km² on each date, the delta in percentage points and km², the relative change, and the largest from→to transitions. Evidence is one land-cover map per date; there is no change map.
+- **Direction:** "increased" / "decreased" / "remained essentially unchanged" comes from the same rounded numbers that are printed. A change smaller than `unchanged_tolerance_pp` (1 pp) counts as unchanged. `details.short_answer` gives the canonical word when one class is asked about.
+- **Confidence:** threshold robustness (the share of 27 runs with each index threshold shifted ±0.05 that reach the same conclusion) × a season factor. It is not a probability.
+- **Season check:** index rules count dry bare fields as built-up. If the 90th-percentile NDVI differs by 0.05 or more between the dates, the answer warns, and confidence for built-up, vegetation and other is multiplied by `max(0, 1 - gap/0.15)`.
+
+**Real-data check (Bengaluru, Sentinel-2 January–March composites):**
+- **Against ESA WorldCover 2021** (four areas, 2021 composites): built-up F1 0.58–0.62 and overall accuracy 0.70–0.74.
+- **Sarjapur Road, 2021 → 2025** (similar seasons): built-up 31.9% → 43.1%, "increased", confidence 1.0.
+- **Sarjapur Road, 2019 → 2025:** 2019 was much drier (p90 NDVI 0.45 vs 0.58). The rules report built-up "decreased" (63.6% → 43.1%) and flag it with confidence 0.12 and the season warning. **Use images from the same season.**
 
 ## Local models (captioning and VQA)
 
