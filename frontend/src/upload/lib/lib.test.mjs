@@ -8,6 +8,8 @@ import {
 } from './format.js';
 import { buildReportHtml, buildReportJson, escapeHtml, reportFilename } from './report.js';
 import { districtGroups } from './locations.js';
+import { imageryTileOptions } from './mapTiles.js';
+import { readFileSync } from 'node:fs';
 
 const upload = {
     upload_id: 'abc123def456',
@@ -205,4 +207,20 @@ test('district dropdown follows the chosen state', () => {
     assert.deepEqual(ladakh.all.map((o) => o.value), ['Kargil', 'Leh']);
     assert.ok(!wb.all.some((o) => ladakh.all.some((p) => p.value === o.value)));
     assert.deepEqual(districtGroups([], null), { major: [], all: [] });   // no state picked yet
+});
+
+test('imagery tiles: sharp on scaled displays without asking Esri beyond zoom 19', () => {
+    assert.deepEqual(imageryTileOptions(1), { detectRetina: false, maxNativeZoom: 19, maxZoom: 21, keepBuffer: 4 });
+    const hi = imageryTileOptions(1.25);
+    assert.equal(hi.detectRetina, true);
+    assert.equal(hi.maxNativeZoom + 1, 19);   // retina asks for one level deeper
+});
+
+test('map background override is outside any CSS layer (so it beats leaflet.css #ddd)', () => {
+    const css = readFileSync(new URL('../../index.css', import.meta.url), 'utf-8');
+    const rule = css.match(/\n\.leaflet-container\s*\{[^}]*background:\s*var\(--color-space-900\)/);
+    assert.ok(rule, 'unlayered .leaflet-container background rule missing');
+    const before = css.slice(0, rule.index);
+    const opened = (before.match(/@layer[^{;]*\{/g) || []).length;
+    assert.equal(opened, 0, 'rule must not sit inside an @layer block');
 });
