@@ -149,6 +149,21 @@ radar file (GeoTIFF), or use 'Fetch from Earth Engine' ..."*.
    - **Limits:** boxes over 10 x 10 km are refused with a message. Without Earth Engine credentials the
      button is disabled with "Earth Engine not configured - use samples/ or upload GeoTIFFs".
 
+**Scenario 7: anywhere in India** (dropdowns only; the list works offline, the fetch needs Earth Engine):
+1. **Map Analysis** sidebar: **State / UT** lists all 36 states and UTs. After picking one, **District / City**
+   shows "Major cities" (capital + biggest) and then "All districts". Picking a district flies the map there,
+   framing the whole district: West Bengal → Kolkata (zoom 12), Assam → Guwahati / Dispur (Kamrup
+   Metropolitan, zoom 10), Ladakh → Leh (zoom 7), Rajasthan → Jaipur (zoom 8), Kerala → Thiruvananthapuram (zoom 10).
+2. **Fetch from Earth Engine**: choose **Optical + SAR**, **State / UT and district**, West Bengal → Kolkata,
+   box 5 km, dates 2024-01-01 to 2024-03-31. A small preview map flies to Kolkata and shows the box.
+   Large districts are only partly covered by the box; use **Draw rectangle** for a specific spot.
+3. Expected result (run on 2026-09-26):
+   - **Upload:** accepted in about 16 s: Sentinel-2 L2A (6 bands, 36 cloud-masked scenes) + Sentinel-1 GRD
+     (VV/VH dB, 14 scenes), EPSG:32645, 10 m, 506 x 502 px, 100% overlap.
+   - **Answer:** *Map water and built-up areas* gives "About 4.0% of the area is water and 34.5% of the
+     area is built-up (buildings and roads)." (water 3.98%, 1.01 km²; built-up 34.48%, 8.76 km² of 25.40 km²),
+     Medium confidence: the radar and the normal image agree on only 49% of the built-up spots they found.
+
 ## 3. Same scenarios from the command line
 
 ```powershell
@@ -164,7 +179,7 @@ plain-language answers.
 ## 4. Tests
 
 ```powershell
-cd backend; pytest                                   # 431 tests
+cd backend; pytest                                   # 460 tests
 cd ..\ml\vqa_head; ..\..\.venv\Scripts\python.exe -m pytest
 cd ..\landcover_patch; ..\..\.venv\Scripts\python.exe -m pytest
 cd ..\..\frontend; npm test
