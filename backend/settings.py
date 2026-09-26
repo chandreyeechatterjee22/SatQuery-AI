@@ -33,6 +33,12 @@ def vqa_head_path():
                 or model_cache_dir() / "vqa_head" / "rsvqa_lr_head.pt")
 
 
+def landcover_patch_path():
+    """BigEarthNet-fine-tuned 4-band land-cover classifier (env LANDCOVER_PATCH_PATH)."""
+    return Path(os.getenv("LANDCOVER_PATCH_PATH")
+                or model_cache_dir() / "landcover_patch" / "resnet18_4band_ben.pt")
+
+
 def max_upload_bytes():
     """Per-file size limit (env MAX_UPLOAD_MB)."""
     raw = os.getenv("MAX_UPLOAD_MB")

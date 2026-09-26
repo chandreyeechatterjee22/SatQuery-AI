@@ -46,11 +46,14 @@ def no_real_models(tmp_path, monkeypatch):
 
     Tests that want a (fake or real) model opt in explicitly.
     """
-    from models import remoteclip, vqa_head
+    from models import landcover_patch, remoteclip, vqa_head
     from agent.tools import clip_common
 
     monkeypatch.setenv("REMOTECLIP_CHECKPOINT", str(tmp_path / "missing" / "remoteclip.pt"))
     monkeypatch.setenv("VQA_HEAD_PATH", str(tmp_path / "missing" / "head.pt"))
+    monkeypatch.setenv("LANDCOVER_PATCH_PATH", str(tmp_path / "missing" / "landcover.pt"))
+    monkeypatch.setattr(landcover_patch, "_model", None)
+    monkeypatch.setattr(landcover_patch, "_model_key", None)
     remoteclip._reset_for_tests()
     monkeypatch.setattr(vqa_head, "_head", None)
     monkeypatch.setattr(vqa_head, "_head_key", None)
