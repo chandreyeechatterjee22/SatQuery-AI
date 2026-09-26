@@ -109,3 +109,12 @@ test('report filenames', () => {
     assert.equal(reportFilename(upload, result, 'json'), 'satquery-report-q9876543.json');
     assert.equal(reportFilename(upload, null, 'html'), 'satquery-report-abc123de.html');
 });
+
+test('uploadProblems explains PNG/JPEG and unsupported files instead of hiding them', () => {
+    assert.deepEqual(uploadProblems('single', { 1: { name: 'scene.tif' } }, {}), []);
+    assert.deepEqual(uploadProblems('single', { 1: { name: 'photo.JPG' } }, {}),
+        ['photo.JPG is a PNG/JPEG. Upload a GeoTIFF (.tif), or turn on Benchmark mode under Advanced.']);
+    assert.deepEqual(uploadProblems('single', { 1: { name: 'photo.png' } }, {}, true), []);
+    assert.deepEqual(uploadProblems('single', { 1: { name: 'notes.pdf' } }, {}),
+        ['notes.pdf is not a supported image. Use a GeoTIFF (.tif/.tiff).']);
+});
