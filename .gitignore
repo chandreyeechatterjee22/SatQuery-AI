@@ -54,3 +54,6 @@ ml/checkpoints/
 .idea/
 .DS_Store
 Thumbs.db
+
+# --- Small demo inputs (see samples/README.md) ---
+!samples/*.tif
