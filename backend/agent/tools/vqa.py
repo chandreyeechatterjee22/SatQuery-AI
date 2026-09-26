@@ -57,11 +57,15 @@ class VqaTool(Tool):
             trace = {"answered_by": ZERO_SHOT, "model": encoder.model_id, "head_error": head_error}
 
         trace["question_type"] = qtype
+        warnings = []
+        if qtype == rsvqa.COUNT and not ctx.file(1)["metadata"]["georeferenced"]:
+            warnings.append("Counts were learned on 2.56 km Sentinel-2 tiles (10 m pixels). This image has no map "
+                            "scale, so treat the number as a rough guess.")
         return ToolResult(
             answer=answer,
             confidence=probability,
             evidence_images=[preview_evidence(ctx)],
-            data={"question_type": qtype, "answered_by": trace["answered_by"],
+            data={"question_type": qtype, "answered_by": trace["answered_by"], "warnings": warnings,
                   "top_answers": [{"answer": a, "probability": round(p, 4)} for a, p in top]},
             trace={k: v for k, v in trace.items() if v is not None},
         )

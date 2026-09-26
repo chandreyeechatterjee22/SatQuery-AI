@@ -165,7 +165,7 @@ python -m app.predict --task caption --input C:\images --out predictions.json
 - **Fusion:** `and` (default) means both modalities must agree; `or` accepts either one. Built-up never overlaps the final water mask.
 - **Output per class:** area % and km² (when the CRS allows it), the % flagged by optical only, SAR only and both, and an RGBA overlay coloured by those three groups.
 - **Confidence:** modality agreement, i.e. pixels both modalities flag ÷ pixels either flags. It is a consensus measure, not a calibrated probability, and it is `null` if one modality lacks the needed bands.
-- **Uncalibrated SAR:** values that don't look like calibrated sigma0 in dB are flagged in `warnings`.
+- **Unusable inputs:** the tool returns `NOT_AVAILABLE` with a plain reason, instead of numbers, when the radar image isn't calibrated backscatter (e.g. a JPG/PNG picture of SAR data or raw DNs), or when the optical image is a photo with only RGB (no NIR/SWIR). JPG/PNG photos work for captioning, VQA and metadata; count answers on photos carry a note that the image scale is unknown.
 
 All thresholds are validated parameters (see `GET /api/tools`).
 
