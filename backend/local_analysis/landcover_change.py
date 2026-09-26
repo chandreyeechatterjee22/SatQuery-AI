@@ -29,6 +29,17 @@ DEFAULTS = {
 ROBUSTNESS_SHIFT = 0.05
 REQUIRED_ROLES = ("green", "red", "nir")
 
+# Season check. Index rules count dry bare fields as built-up, so two dates in a
+# different state of greenness produce fake built-up/vegetation change (e.g. Sarjapur
+# Road, Bengaluru, Jan-Mar composites: built-up 63.6% in dry 2019 vs 31.9% in 2021,
+# against 26.3% in ESA WorldCover 2021). The 90th-percentile NDVI (the greenest
+# pixels) moves with season/rainfall but barely with real conversion of some
+# vegetation to built-up. These constants are heuristics.
+SEASON_NDVI_PERCENTILE = 90
+SEASON_WARNING_GAP = 0.05
+SEASON_ZERO_CONFIDENCE_GAP = 0.15
+SEASON_SENSITIVE = ("built_up", "vegetation", "other")
+
 INCREASED, DECREASED, UNCHANGED = "increased", "decreased", "unchanged"
 
 
@@ -107,6 +118,13 @@ def analyse_change(before, after, params=None):
     if n_valid == 0:
         raise ValueError("the two dates have no valid pixels in common")
 
+    season = season_check(idx_b["ndvi"], idx_a["ndvi"], valid)
+    if season["gap"] >= SEASON_WARNING_GAP:
+        warnings.append(
+            f"The dates differ in overall greenness (NDVI p{SEASON_NDVI_PERCENTILE} "
+            f"{season['before']:.2f} vs {season['after']:.2f}). Index rules count dry bare fields as "
+            "built-up, so built-up / vegetation / other changes may reflect season or rainfall rather "
+            "than real land-cover change. Compare images from the same season.")
     map_b, map_a = classify(idx_b, valid, params), classify(idx_a, valid, params)
     pixel_area = pixel_area_m2(grid)
     class_stats = {c: _class_change(map_b, map_a, CLASS_CODES[c], valid, n_valid, pixel_area,
@@ -133,8 +151,27 @@ def analyse_change(before, after, params=None):
             "unchanged_tolerance_pp": params["unchanged_tolerance_pp"],
         },
         "robustness": _robustness(idx_b, idx_a, valid, n_valid, params, class_stats),
+        "season": season,
         "warnings": warnings,
     }
+
+
+def season_check(ndvi_before, ndvi_after, valid):
+    """Greenness of the greenest pixels on each date and the resulting confidence factor."""
+    before = float(np.nanpercentile(ndvi_before[valid], SEASON_NDVI_PERCENTILE))
+    after = float(np.nanpercentile(ndvi_after[valid], SEASON_NDVI_PERCENTILE))
+    gap = round(abs(after - before), 4)
+    factor = round(max(0.0, 1.0 - gap / SEASON_ZERO_CONFIDENCE_GAP), 4)
+    return {"percentile": SEASON_NDVI_PERCENTILE, "before": round(before, 4), "after": round(after, 4),
+            "gap": gap, "factor": factor, "affects": list(SEASON_SENSITIVE)}
+
+
+def class_confidence(result, cls):
+    """Threshold robustness, times the season factor for greenness-sensitive classes."""
+    conf = result["robustness"]["per_class"][cls]
+    if cls in SEASON_SENSITIVE:
+        conf *= result["season"]["factor"]
+    return round(conf, 4)
 
 
 def _class_change(map_b, map_a, code, valid, n_valid, pixel_area, tolerance):

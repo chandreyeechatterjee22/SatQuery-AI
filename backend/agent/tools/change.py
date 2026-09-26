@@ -60,14 +60,15 @@ class ChangeTool(Tool):
         for role, f in (("before", before), ("after", after)):
             evidence.append(self._map(ctx, query_id, out_dir, role, f, result))
 
-        robustness = result["robustness"]["per_class"]
-        confidence = float(np.mean([robustness[c] for c in focus]))
+        per_class = {c: lc.class_confidence(result, c) for c in CLASSES}
+        confidence = float(np.mean([per_class[c] for c in focus]))
         details = {
             "classes": result["classes"], "focus": focus, "transitions": result["transitions"][:6],
             "changed_percent": result["changed_percent"], "dates": result["dates"],
             "valid_pixels": result["valid_pixels"], "valid_area_km2": result["valid_area_km2"],
             "methods": result["methods"], "robustness": result["robustness"],
-            "warnings": result["warnings"], "confidence_basis": "threshold_robustness",
+            "season": result["season"], "confidence_per_class": per_class,
+            "warnings": result["warnings"], "confidence_basis": "threshold_robustness x season_consistency",
         }
         if len(focus) == 1:
             details["short_answer"] = result["classes"][focus[0]]["direction"]

@@ -158,7 +158,8 @@ def test_builtup_question(pair):
                                     "(+12.50 percentage points, 0.0016 -> 0.0024 km², +0.0008 km², +50.0% relative).")
     assert check_lines_match_numbers(res["answer"], res["details"]) == 1
     assert res["confidence"] == 1.0
-    assert res["details"]["confidence_basis"] == "threshold_robustness"
+    assert res["details"]["confidence_basis"] == "threshold_robustness x season_consistency"
+    assert res["details"]["season"]["gap"] == 0.0 and res["details"]["season"]["factor"] == 1.0
 
 
 def test_what_changed(pair):
@@ -217,3 +218,48 @@ def test_rgb_pair_is_not_available(make_upload):
 def test_bad_params(pair):
     res = run_query(pair, "What changed?", params={"unchanged_tolerance_pp": 50})
     assert res["status"] == "REJECTED" and "between 0 and 20" in res["answer"]
+
+
+# --- season consistency ------------------------------------------------------------
+
+def dimmed(img, factor):
+    """Same land cover, drier season: vegetation NIR drops so NDVI of the greenest pixels falls."""
+    out = img.copy()
+    veg = out[3] == LC_VEG[3]
+    out[3][veg] = (out[3][veg] * factor).astype("uint16")
+    return out
+
+
+def test_real_conversion_keeps_full_season_factor(tmp_path):
+    before, after = bitemporal_scene()   # half the vegetation becomes built-up / other
+    res = lc.analyse_change(side(tmp_path, "b.tif", before, D1), side(tmp_path, "a.tif", after, D2))
+    assert res["season"]["gap"] == 0.0 and res["season"]["factor"] == 1.0
+    assert not any("greenness" in w for w in res["warnings"])
+
+
+def test_drier_second_date_warns_and_lowers_confidence(tmp_path):
+    before, _ = bitemporal_scene()
+    after = dimmed(before, 0.5)  # NDVI of vegetation 0.76 -> ~0.58: same land cover, drier
+    res = lc.analyse_change(side(tmp_path, "b.tif", before, D1), side(tmp_path, "a.tif", after, D2))
+    s = res["season"]
+    assert s["gap"] > 0.15 and s["factor"] == 0.0
+    assert any("differ in overall greenness" in w for w in res["warnings"])
+    assert lc.class_confidence(res, "built_up") == 0.0
+    assert lc.class_confidence(res, "water") == res["robustness"]["per_class"]["water"]
+
+
+def test_season_factor_scales_linearly():
+    valid = np.ones((1, 10), bool)
+    b = np.full((1, 10), 0.60)
+    s = lc.season_check(b, b - 0.06, valid)
+    assert s["gap"] == pytest.approx(0.06) and s["factor"] == pytest.approx(0.6)
+
+
+def test_season_note_in_answer(make_upload):
+    before, _ = bitemporal_scene()
+    uid = make_upload("bi_temporal", [{"count": 4, "data": before}, {"count": 4, "data": dimmed(before, 0.5)}],
+                      dates=[D1, D2], sensors=["cartosat2s", "cartosat2s"])
+    res = run_query(uid, "Has built-up area increased?")
+    assert "Note: The dates differ in overall greenness" in res["answer"]
+    assert res["confidence"] == 0.0
+    assert res["details"]["confidence_per_class"]["built_up"] == 0.0
