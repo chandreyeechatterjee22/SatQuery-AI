@@ -4,6 +4,7 @@ import Hero from './components/Hero';
 import Sidebar from './components/Sidebar';
 import MapComponent from './components/MapComponent';
 import ResultsPanel from './components/ResultsPanel';
+import UploadAnalysis from './upload/UploadAnalysis';
 import { fetchStates, fetchAreas, fetchLocation, fetchSentinelInfo, runAnalysis } from './api';
 
 function App() {
@@ -18,6 +19,17 @@ function App() {
     const [analysisResult, setAnalysisResult] = useState(null);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [flyToLocation, setFlyToLocation] = useState(null);
+
+    // "map" = the original Earth Engine flow, "upload" = the upload-based agent flow.
+    // The map view stays mounted (only hidden) so its state and drawn AOI survive tab switches.
+    const [view, setView] = useState('map');
+    const [uploadOpened, setUploadOpened] = useState(false);
+    const changeView = (next) => {
+        setView(next);
+        if (next === 'upload') setUploadOpened(true);
+        // Leaflet measures its container on resize; nudge it after being un-hidden.
+        if (next === 'map') setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
+    };
 
     useEffect(() => {
         fetchStates().then(data => setStates(data.states || []));
@@ -106,7 +118,8 @@ function App() {
 
     return (
         <div className="h-screen w-screen overflow-y-auto overflow-x-hidden bg-space-900">
-            <Header />
+            <Header view={view} onViewChange={changeView} />
+            <div className={view === 'map' ? '' : 'hidden'}>
             <Hero
                 onStartExploring={() => document.getElementById('explore')?.scrollIntoView({ behavior: 'smooth' })}
                 onSelectFeature={handleSelectFeature}
@@ -156,6 +169,13 @@ function App() {
                     analysisResult={analysisResult}
                 />
             </section>
+            </div>
+
+            {uploadOpened && (
+                <div className={view === 'upload' ? '' : 'hidden'}>
+                    <UploadAnalysis />
+                </div>
+            )}
         </div>
     );
 }
