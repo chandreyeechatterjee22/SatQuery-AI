@@ -79,7 +79,7 @@ def resolve_bands(meta, sensor="auto", expected_kind=None, band_roles=None):
                         ["4 bands assumed to be blue, green, red, NIR (e.g. Cartosat-2S MX); "
                          "set sensor to override"])
     if count == 3:
-        warnings = [] if meta.get("driver") in ("PNG", "JPEG") else [
+        warnings = [] if meta.get("driver") in ("PNG", "JPEG", "WEBP") else [
             "3 bands assumed to be red, green, blue; set sensor to override"]
         return _profile("rgb", "optical", _FIXED_LAYOUTS["rgb"], "band_count", warnings)
     return _profile("unknown", expected_kind or "optical", [None] * count, "unresolved",

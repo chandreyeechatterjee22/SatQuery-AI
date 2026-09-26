@@ -15,7 +15,10 @@ const UploadForm = ({ onSubmit, busy }) => {
     const [advanced, setAdvanced] = useState(false);
 
     const spec = MODES[mode];
-    const problems = uploadProblems(mode, files, dates, benchmark);
+    // PNG/JPEG photos are uploaded in benchmark mode automatically (the backend only accepts them there).
+    const hasPhoto = Object.values(files).some((f) => /\.(png|jpe?g)$/i.test(f?.name || ''));
+    const photoMode = benchmark || hasPhoto;
+    const problems = uploadProblems(mode, files, dates, photoMode);
     // Always list PNG/JPEG too: filtering them out made folders of photos look empty in the Windows picker.
     const accept = '.tif,.tiff,.png,.jpg,.jpeg';
 
@@ -30,7 +33,7 @@ const UploadForm = ({ onSubmit, busy }) => {
         if (problems.length || busy) return;
         const form = new FormData();
         form.append('mode', mode);
-        form.append('benchmark_mode', benchmark ? 'true' : 'false');
+        form.append('benchmark_mode', photoMode ? 'true' : 'false');
         for (const f of spec.files) {
             form.append(`file_${f.slot}`, files[f.slot]);
             if (dates[f.slot]) form.append(`date_${f.slot}`, dates[f.slot]);
@@ -102,6 +105,13 @@ const UploadForm = ({ onSubmit, busy }) => {
                     <input type="checkbox" checked={benchmark} onChange={(e) => setBenchmark(e.target.checked)} />
                     Benchmark mode (also accept PNG/JPEG)
                 </label>
+            )}
+
+            {hasPhoto && (
+                <p className="rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-2 text-xs text-gray-300">
+                    JPG/PNG photo: uploaded in photo (benchmark) mode. Photos have no map coordinates or infrared bands,
+                    so captioning, question answering and metadata work; water/built-up and change analysis need GeoTIFFs.
+                </p>
             )}
 
             {problems.length > 0 && (

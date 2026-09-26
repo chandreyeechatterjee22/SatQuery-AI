@@ -13,6 +13,7 @@ MODES = {"single": 1, "optical_sar": 2, "bi_temporal": 2}
 SLOT_KINDS = {"single": [None], "optical_sar": ["optical", "sar"], "bi_temporal": [None, None]}
 GEOTIFF_EXTS = {".tif", ".tiff"}
 IMAGE_EXTS = {".png", ".jpg", ".jpeg"}
+_PHOTO_DRIVER = {".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG"}
 LOW_OVERLAP_WARNING = 0.5
 
 
@@ -132,6 +133,10 @@ def _check_file(slot, filename, path, sensor, expected_kind, benchmark_mode, rea
                               f"File {slot} ({filename}) is named {ext} but is actually "
                               f"{meta['driver']}.", slot))
         return None
+    if not expected_driver and meta["driver"] != _PHOTO_DRIVER[ext]:
+        # e.g. a WebP saved from a website under a .jpg name: still an ordinary photo.
+        warnings.append(f"File {slot} ({filename}) is named {ext} but is actually {meta['driver']}; "
+                        "read as a photo.")
 
     try:
         bands = resolve_bands(meta, sensor=sensor, expected_kind=expected_kind, band_roles=band_roles)
